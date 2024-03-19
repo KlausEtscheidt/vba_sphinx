@@ -1,0 +1,55 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "PowerShell: Launch Current File",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${file}",
+            "args": []
+        },
+        {
+            "name": "Python Debugger: Python File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "justMyCode": false
+        },
+        {
+            "name": "Build Doku html",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_sphinx_doku.py",
+            "args": [
+                "html"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Build Doku xml",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_sphinx_doku.py",
+            "args": [
+                "xml"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Translate Doku",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/doku/build_sphinx_doku.py",
+            "args": [
+                "gettext"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Python Debugger: Python File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}"
+        }
+    ]
+}

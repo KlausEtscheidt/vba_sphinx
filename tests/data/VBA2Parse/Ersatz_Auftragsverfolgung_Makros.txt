@@ -1,0 +1,1488 @@
+================================================================================
+vb_office_obj: DieseArbeitsmappe
+================================================================================
+Private Sub Workbook_Open()
+End Sub
+
+
+================================================================================
+vbmodule: ExcelAusgabe
+================================================================================
+'! Modul zum Lesen von Ersatzaufträgen incl der Positionen und der Lagersituation
+Public Sub mainFormShow()
+    mainForm.Show
+End Sub
+'!Lies Daten aus Access
+Public Sub lies_KA_aus_Access()
+    Set KAListe = New KA_Liste
+    On Error GoTo fehler 'sicher stellen, das wir disconnecten
+    KAListe.Init
+    GoTo ende
+fehler:
+    MsgBox Err.Description, vbCritical
+ende:
+    On Error GoTo 0
+    disconnect_Access
+End Sub
+'!Gibt die Wochenübersicht (Anzahl,wert und Anzahl Pos) der Aufträge in Excel aus
+Sub WochenAusgabeNachExcel()
+    Dim Zeile As Long
+    Dim sql$, sql_sel$, sql_KA$
+    Dim ersterMittwoch$
+    set_globals
+    'Ausgabe vorbereiten
+    Zeile = 5
+    WochenAusgabeVorbereiten Zeile
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    'Lies Auftragsliste aus Access, wenn nicht schon geschehen
+    If KAListe.Liste.Count = 0 Or force_access_read Then
+        lies_KA_aus_Access
+    End If
+    'lies weitere Daten access
+    'Verbinde erneut zu Access wenn nötig
+    connect_Access
+    'Hole erste Woche mit offen Aufträgen
+    sql = "select min(lt) as ersterMittwoch from Kundenauftraege where status<4"
+    Set rs = hole_recordset(sql)
+    ersterMittwoch = rs.Fields("ersterMittwoch")
+    rs.Close
+    'Vereinige Tabellen Kundenauftraege und Kundenauftraege_erledigt
+    sql_sel = "select ident_nr, lt, wertindex, lt_KW "
+ sql_KA = sql_sel & "from Kundenauftraege " & "UNION "           & sql_sel & "from Kundenauftraege_erledigt where lt>=CDate(""" & ersterMittwoch & """)"
+    'Summieren
+ sql = "select lt,First(lt_KW) as KW, Count(KA.ident_nr) as AnzKA, Sum(wertindex) as wert, sum(Anzpos) as npos " & "FROM (" & sql_KA & ") as KA INNER JOIN KA_Zusatzdaten "        & "ON KA.ident_nr=KA_Zusatzdaten.ident_nr GROUP BY lt ORDER BY lt;"
+    Set rs = hole_recordset(sql)
+    'Ausgabe
+    Do While Not rs.EOF
+        Target.Cells(Zeile, 1).Value = rs.Fields("KW")
+        Target.Cells(Zeile, 2).Value = rs.Fields("AnzKA")
+        Target.Cells(Zeile, 3).Value = rs.Fields("wert")
+        Target.Cells(Zeile, 4).Value = rs.Fields("npos")
+        Set WStatus = New Wochenstatus
+        WStatus.BerechneStatus KAListe, rs.Fields("lt")
+        Target.Cells(Zeile, 6).Value = WStatus.noffen
+        Target.Cells(Zeile, 7).Value = WStatus.nerl
+        Target.Cells(Zeile, 8).Value = WStatus.nerl / WStatus.nKA
+        Target.Cells(Zeile, 9).Value = WStatus.nVersand
+        Target.Cells(Zeile, 10).Value = WStatus.nLager100
+        Target.Cells(Zeile, 11).Value = WStatus.nErsatz
+        Target.Cells(Zeile, 12).Value = WStatus.nFehlteil
+        Zeile = Zeile + 1
+        rs.MoveNext
+    Loop
+    disconnect_Access
+End Sub
+'!Gibt für die gewählten Zeitbereiche und den gewählten Umfang
+'!die Daten der Kundeaufträge in Excel aus
+Sub ListenAusgabeNachExcel()
+    Dim Zeile As Long
+    set_globals
+    'Lies Daten aus Access, wenn nicht schon geschehen
+    If KAListe.Liste.Count = 0 Or force_access_read Then
+        lies_KA_aus_Access
+    End If
+    'Ausgabe vorbereiten
+    Zeile = 4
+    ListenAusgabeVorbereiten Zeile
+    KAListe.NachExcel Zeile
+End Sub
+'!Gibt die Positionen eunes Auftrags in Excel aus
+Sub DetailAusgabeNachExcel(ka_id$)
+    Dim Zeile As Long
+    Dim Spalte%
+    set_globals
+    Zeile = 2
+    Spalte = 1
+    DetailAusgabeVorbereiten Zeile
+    'Lies Daten aus Access, wenn nicht schon geschehen
+    Set KA = New KundenAuftrag
+    KA.AuftragsNr = ka_id
+    Set KA.KaPositionen = New Collection
+    On Error GoTo fehler 'sicher stellen, das wir disconnecten
+    KA.hole_positionen
+    disconnect_Access
+    For i = 1 To KA.KaPositionen.Count
+        Set myPos = KA.KaPositionen.Item(i)
+        myPos.ExcelOut Target, Zeile, Spalte
+    Next
+    GoTo ende
+fehler:
+    MsgBox Err.Description, vbCritical
+    On Error GoTo 0
+ende:
+    disconnect_Access
+End Sub
+'!Vorbereiten der Ausgabe nach Excel
+Sub WochenAusgabeVorbereiten(Zeile As Long)
+    Dim myRange As Range
+    'Filter aus
+    target_sheet_Wochen.AutoFilterMode = False
+    'Leeren
+    Set myRange = target_sheet_Wochen.Range("A" & CStr(Zeile + 1) & ":X20000")
+    myRange.ClearContents
+    Set Target = target_sheet_Wochen.Range("a1")
+End Sub
+'!Vorbereiten der KA-Listen Ausgabe nach Excel
+Sub ListenAusgabeVorbereiten(Zeile As Long)
+    Dim myRange As Range
+    'Filter aus
+    target_sheet_KA_Liste.AutoFilterMode = False
+    'Leeren
+    Set myRange = target_sheet_KA_Liste.Range("A" & CStr(Zeile + 1) & ":X20000")
+    myRange.ClearContents
+    myRange.Font.ColorIndex = xlAutomatic
+    myRange.Font.Strikethrough = False
+    Set Target = target_sheet_KA_Liste.Range("a1")
+End Sub
+'!Vorbereiten der KA-Detail-Ausgabe nach Excel
+Sub DetailAusgabeVorbereiten(Zeile As Long)
+    Dim myRange As Range
+    'Filter aus
+    target_sheet_KA_Detail.AutoFilterMode = False
+    'Leeren
+    Set myRange = target_sheet_KA_Detail.Range("A" & CStr(Zeile + 1) & ":X20000")
+    myRange.ClearContents
+    myRange.Font.ColorIndex = xlAutomatic
+    myRange.Font.Strikethrough = False
+    Set Target = target_sheet_KA_Detail.Range("a1")
+End Sub
+
+
+================================================================================
+vbclass: KundenAuftrag
+================================================================================
+'!Id des KA
+Public AuftragsNr As Long
+'!Liefertermin als Datum (immer Mittwoch der KW)
+Public Termin$
+Public Termin_KW$
+Public KundenName$
+'!UNIPPS-NettoGesamtpreis des Auftrags geteilt durch 200.000 €
+Public Wertindex As Double
+'!Anzahl der Positionen des Auftrags
+Public AnzPos%
+'!Zahlungsbedingungen (Detail s. UNIPPS)
+Public Zahlungsbed%
+'!Flag=True wenn alle Positionen ausreichend auf Lager
+Public AllesAufLager As Boolean
+Public AllesAufLagerDatum As Date
+'!Flag=True wenn alle Positionen aus 100'er Lagerorten stammen
+Public AllesAuf100erLager As Boolean
+Public Status%
+Public StatusErsatz$
+Public StatusErsatzDatum As Date
+Public FertigDatum As Date
+'!Liste der Positionen des KA
+Public KaPositionen As Collection
+Private locRs  As ADODB.Recordset
+'!Alle Positionen eines KA lesen
+Public Sub hole_positionen()
+    Dim APos As Auftragsposition
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+ sql = "SELECT ident_nr1,ident_nr2, pos, t_tg_nr, Lager_frei,Lager_res, Bedarf_auftrag,Bedarf_pos, bedarf_dispo, " & "fehlbestand as Apos_fehlbestand, fehlbest_status, ist_super_pos, lager_ort, datum " & "From Auftragspos left join Historie_Auftragspos " & "ON Auftragspos.id_apos=Historie_Auftragspos.id_apos " & "where ident_nr1= " & Me.AuftragsNr        & " ORDER BY ident_nr2;"
+    Set locRs = hole_recordset(sql)
+    'Alle Positionen des KA lesen und in Liste speichern
+    Do While Not locRs.EOF
+        Set APos = New Auftragsposition
+        KaPositionen.Add APos
+        APos.Init locRs
+        locRs.MoveNext
+    Loop
+End Sub
+'!Kundenauftrag nach Excel (mit oder ohne Positionen)
+Public Sub ExcelOut(Target As Range, ByRef Zeile As Long)
+    'Zuerst prüfen ob Ausgabe erfogen soll (Userwahl)
+    'Abbruch, wenn KA nicht in gewählten Zeitfenstern
+    If Not Me.isKaInDateRange Then
+        Exit Sub
+    End If
+    'Abbruch, wenn KA den falschen Lager- oder Lieferzustand hat
+    If Not Me.isKaStatusOK Then
+        Exit Sub
+    End If
+    'Ausgabe KA-Kopf in jeweils neue Zeile
+    Zeile = Zeile + 1
+    Dim Spalte%
+    Spalte = 1
+    Target.Cells(Zeile, Spalte).Value = Me.AuftragsNr: Spalte = Spalte + 1
+    Target.Cells(Zeile, Spalte).Value = Me.Termin: Spalte = Spalte + 1
+    Target.Cells(Zeile, Spalte).Value = Me.Termin_KW: Spalte = Spalte + 1
+    Target.Cells(Zeile, Spalte).Value = Me.KundenName: Spalte = Spalte + 1
+    If Me.Status >= 4 Then
+        Target.Range(Target.Cells(Zeile, 1), Target.Cells(Zeile, 10)).Font.Strikethrough = True
+    End If
+    Target.Cells(Zeile, Spalte).Value = Me.Status: Spalte = Spalte + 1
+    Target.Cells(Zeile, Spalte).Value = Me.Zahlungsbed: Spalte = Spalte + 1
+    If Me.AllesAufLager Then
+        Target.Cells(Zeile, Spalte).Value = "J"
+    Else
+        'Aufträge mit Fehlteilen markieren
+        Target.Cells(Zeile, Spalte).Value = "N"
+        Target.Cells(Zeile, Spalte).Font.Color = -16776961
+        Target.Cells(Zeile, 1).Font.Color = -16776961
+    End If
+    Spalte = Spalte + 1
+    If Me.AllesAufLagerDatum > 0 Then
+        Target.Cells(Zeile, Spalte).Value = Me.AllesAufLagerDatum
+    End If
+    Spalte = Spalte + 1
+    If Me.AllesAuf100erLager Then
+        Target.Cells(Zeile, Spalte).Value = "J": Spalte = Spalte + 1
+    Else
+        'Auftäge mit Fehlteilen markieren
+        Target.Cells(Zeile, Spalte).Value = "N": Spalte = Spalte + 1
+    End If
+    Target.Cells(Zeile, Spalte).Value = Me.StatusErsatz: Spalte = Spalte + 1
+    If Me.StatusErsatzDatum > 0 Then
+        Target.Cells(Zeile, Spalte).Value = Me.StatusErsatzDatum
+    End If
+    Spalte = Spalte + 1
+    Target.Cells(Zeile, Spalte).Value = Me.Wertindex: Spalte = Spalte + 1
+    Target.Cells(Zeile, Spalte).Value = Me.AnzPos: Spalte = Spalte + 1
+    If Me.FertigDatum > 0 Then
+        Target.Cells(Zeile, Spalte).Value = Me.FertigDatum
+    End If
+    Spalte = Spalte + 1
+End Sub
+Public Function isKaStatusOK() As Boolean
+    'Default keine Ausgabe
+    isKaStatusOK = False
+    'fertige KA (status>=4)
+    If Me.Status >= 4 Then
+        If mainForm.status4_ChckBox Then
+            'Ausgabe gewollt
+            isKaStatusOK = True
+        End If
+    ElseIf Me.AllesAufLager Then
+        'KA komplett auf Lager
+        If mainForm.fertig_ChkBox Then
+            'Ausgabe gewollt
+            isKaStatusOK = True
+        End If
+    Else
+        'KA nicht komplett auf Lager
+        If mainForm.unfertig_ChkBox Then
+            'Ausgabe gewollt
+            isKaStatusOK = True
+        End If
+    End If
+End Function
+Public Function isKaInDateRange() As Boolean
+    isKaInDateRange = False
+    If mainForm.WocheTextBox.Value <> "" Then
+        'Falls im Formular ein Wert für eine Einzelwoche eingegeben wurde, wird nur diese Woche ausgegeben
+        kw_jahr = Split(Me.Termin_KW, "/")
+        'Stimmt die Woche des Auftrags mit der im Formular eingegebenen KW überein
+        isKaInDateRange = CInt(kw_jahr(0)) = mainForm.Einzel_KW_Woche
+        'Stimmt das Jahr des Auftrags mit dem im Formular eingegebenen Wert überein
+        isKaInDateRange = isKaInDateRange And CInt(kw_jahr(1)) = mainForm.Einzel_KW_Jahr
+    Else
+        If mainForm.VorwochenChkBox Then
+            'prüfe auf Liefertermin < Mittwoch aktuelle Woche
+            isKaInDateRange = isKaInDateRange Or Me.Termin < Mittwoch_dieser_KW
+        End If
+        If mainForm.aktKWChkBox Then
+            'prüfe auf Liefertermin = Mittwoch aktuelle Woche
+            isKaInDateRange = isKaInDateRange Or (Me.Termin = Mittwoch_dieser_KW)
+        End If
+        If mainForm.ZukunftChkBox Then
+            'prüfe auf Liefertermin > Mittwoch aktuelle Woche
+            isKaInDateRange = isKaInDateRange Or Me.Termin > Mittwoch_dieser_KW
+        End If
+    End If
+End Function
+Public Sub Init(rs As ADODB.Recordset)
+        Set locRs = rs
+        Me.AuftragsNr = Trim(rs.Fields("ident_nr"))
+        'Debug.Print Me.AuftragsNr
+        Me.Termin = rs.Fields("lt")
+        Me.Termin_KW = rs.Fields("lt_KW")
+        Me.KundenName = rs.Fields("kurzname")
+        Me.Status = rs.Fields("Status")
+        Me.Zahlungsbed = rs.Fields("zahlungsbed")
+        Me.AllesAufLager = Not rs.Fields("fehlbestand")
+        Me.AllesAuf100erLager = rs.Fields("Lager100")
+        Me.Wertindex = rs.Fields("wertindex")
+        Me.AnzPos = rs.Fields("Anzpos")
+        If rs.Fields("Ersatz_Status") <> "" Then
+            Me.StatusErsatz = rs.Fields("Ersatz_Status")
+        Else
+            Me.StatusErsatz = ""
+        End If
+        If rs.Fields("ErsatzStatusVom") <> "" Then
+            Me.StatusErsatzDatum = rs.Fields("ErsatzStatusVom")
+        End If
+        If rs.Fields("kpl_lagernd_seit") <> "" Then
+            Me.AllesAufLagerDatum = rs.Fields("kpl_lagernd_seit")
+        End If
+        If rs.Fields("Datum_fertig") <> "" Then
+            Me.FertigDatum = rs.Fields("Datum_fertig")
+        End If
+End Sub
+
+
+================================================================================
+vbclass: Auftragsposition
+================================================================================
+'! Klasse zum Speichern einer Auftragsposition
+'
+' Besonderheit der UNIPPS-Struktur
+' Beim Einlesen der Positionen eines KA werden im Recordset auch Unterpositionen mitgeliefert.
+' Diese haben im Feld ueb_nr einen Wert, der bei einem anderen Datensatz (der übergeordneten Pos)
+' als id auftaucht.
+' Für die übergeordneten Pos ist der Lagerbestand immer 0, da die Pos bei Montage aus den Unterpos gebaut wird
+' Hier wird also dann kein Lagerbestand geprüft, sonder nur die Bestände der untergeordneten Pos.
+' Sub Init muss sofort nach dem Anlegen eine Objekts der Klasse gerufen werden
+' Init erledigt den kompletten Einlesevorgang incl der Lagerbestände
+Private loc_hatFehlbestand As Boolean
+Public Auftragsnummer As Long
+Public PosNr$
+Public t_tg_nr$
+Public Lager_frei As Double
+Public Lager_reserviert As Double
+Public VorzugsLagerOrt$
+Public Bedarf_auftrag As Double
+Public Bedarf_pos As Double
+Public Bedarf_dispo As Double
+Public hatFehlbestand As Boolean
+Public Fehlbestands_art%
+Public lagernd_seit As Date
+Public hatUnterpos As Boolean
+'!Quasi-Konstruktor: Holt alle Daten der Pos aus Recordset
+'!Muss als erstes nach NEW aufgerufen werden
+Public Sub Init(rs As Recordset)
+    Me.Auftragsnummer = Trim(rs.Fields("ident_nr1"))
+    Me.PosNr = Trim(rs.Fields("pos"))
+    'Debug.Print Me.PosNr
+    Me.t_tg_nr = Trim(rs.Fields("t_tg_nr"))
+    Me.Lager_frei = rs.Fields("Lager_frei")
+    Me.Lager_reserviert = rs.Fields("Lager_res")
+    Me.Bedarf_auftrag = rs.Fields("Bedarf_auftrag")
+    Me.Bedarf_pos = rs.Fields("Bedarf_pos")
+    Me.Bedarf_dispo = rs.Fields("bedarf_dispo")
+    Me.hatUnterpos = rs.Fields("ist_super_pos")
+    Me.hatFehlbestand = rs.Fields("Apos_fehlbestand")
+    Me.Fehlbestands_art = rs.Fields("fehlbest_status")
+    Me.VorzugsLagerOrt = Trim(rs.Fields("Lager_ort"))
+    If Not IsNull(rs.Fields("datum")) Then
+        Me.lagernd_seit = rs.Fields("datum")
+    End If
+End Sub
+'!Ausgabe KA-Position in neue Zeile
+Public Sub ExcelOut(Target As Range, ByRef Zeile As Long, startcol%)
+    Dim col%
+    Zeile = Zeile + 1
+    col = startcol
+    Target.Cells(Zeile, col).Value = Me.Auftragsnummer: col = col + 1
+    Target.Cells(Zeile, col).Value = Me.PosNr: col = col + 1
+    Target.Cells(Zeile, col).Value = Me.t_tg_nr: col = col + 1
+    Target.Cells(Zeile, col).Value = CStr(Me.VorzugsLagerOrt): col = col + 1
+    Target.Cells(Zeile, col).Value = Me.Fehlbestands_art: col = col + 1
+    If hatFehlbestand Then
+        Target.Cells(Zeile, col - 1).Font.Color = -16776961
+    End If
+    Target.Cells(Zeile, col).Value = Me.Lager_frei: col = col + 1
+    Target.Cells(Zeile, col).Value = Me.Lager_reserviert: col = col + 1
+    Target.Cells(Zeile, col).Value = Me.Bedarf_auftrag: col = col + 1
+    Target.Cells(Zeile, col).Value = Me.Bedarf_pos: col = col + 1
+    Target.Cells(Zeile, col).Value = Me.Bedarf_dispo: col = col + 1
+    If Me.lagernd_seit > 0 Then
+        Target.Cells(Zeile, col).Value = Me.lagernd_seit
+    End If
+    col = col + 1
+End Sub
+
+
+================================================================================
+vbform: mainForm
+================================================================================
+Public Einzel_KW_Woche%
+Public Einzel_KW_Jahr%
+Private Sub AusgabeBtn_Click()
+    force_access_read = Me.forced_ChckBox
+    If WocheTextBox.Value <> "" Then
+        'Falls im Formular ein Wert für eine Einzelwoche eingegeben wurde,
+        'Wert auf korrektes Format prüfen
+        If Not Check_KW_Eingabe Then
+            Exit Sub
+        End If
+    End If
+    Me.Hide
+    ListenAusgabeNachExcel
+    WocheTextBox.Value = "" 'immer zurücksetzen
+    Range("A5").Activate
+End Sub
+Private Sub EscBtn_Click()
+    disconnect_Access
+    Me.Hide
+End Sub
+Private Sub UNIPPSImportBtn_Click()
+    Me.Hide
+    'Liest neuen Datenstand aus UNIPPS und Ersatzkommissionen.xls nach Access
+    'hauptroutine des Imports
+    Import2Access
+End Sub
+Private Sub UserForm_Activate()
+    letztesImportDatumLbl.Caption = hole_letzten_Datenstand
+End Sub
+Private Function Check_KW_Eingabe() As Boolean
+    Check_KW_Eingabe = False
+    this_week = DatePart("ww", Now(), vbMonday, vbFirstFourDays)
+    this_year = DatePart("yyyy", Now())
+    'In Integer wandeln
+    If Not IsNumeric(WocheTextBox.Value) Then
+ MsgBox "Falsches Format für KW."           & vbCrLf & vbCrLf & "Woche ist keine Zahl."
+        Exit Function
+    End If
+    Einzel_KW_Woche = CInt(WocheTextBox.Value)
+    'Bereich prüfen
+    If Einzel_KW_Woche < 1 Or Einzel_KW_Woche > 53 Then
+ MsgBox "Falsches Format für KW."           & vbCrLf & vbCrLf & "Woche muss in der Zukunft und >=1 <=53 sein."
+        Exit Function
+    End If
+    Einzel_KW_Jahr = CInt(this_year)
+    'Jahr um 1 erhöhen, wenn die Woche im Formular < als die aktuelle Woche ist
+    If Einzel_KW_Woche < this_week Then
+        Einzel_KW_Jahr = Einzel_KW_Jahr + 1
+    End If
+    Check_KW_Eingabe = True
+End Function
+Private Function xxxCheck_KW_Eingabe() As Boolean
+    Dim dateparts() As String
+    Check_KW_Eingabe = False
+    this_year = DatePart("yyyy", Now())
+    'Zerlegen beim "/"
+    dateparts = Split(mainForm.WocheTextBox.Value, "/")
+    If UBound(dateparts) <> 1 Then
+ MsgBox "Falsches Format für KW. (nicht 24/2023)"               & vbCrLf & vbCrLf & "Kein Trennstrich / ?"
+        Exit Function
+    End If
+    Woche = dateparts(0)
+    Jahr = dateparts(1)
+    'In Integer wandeln
+    If Not IsNumeric(Woche) Then
+ MsgBox "Falsches Format für KW. (nicht 24/2023)"           & vbCrLf & vbCrLf & "Woche ist keine Zahl."
+        Exit Function
+    End If
+    If Not IsNumeric(Jahr) Then
+ MsgBox "Falsches Format für KW. (nicht 24/2023)"           & vbCrLf & vbCrLf & "Jahr ist keine Zahl."
+        Exit Function
+    End If
+    Einzel_KW_Woche = CInt(Woche)
+    Einzel_KW_Jahr = CInt(Jahr)
+    'Bereich prüfen
+    If Einzel_KW_Woche < 1 Or Einzel_KW_Woche > 53 Then
+ MsgBox "Falsches Format für KW. (nicht 24/2023)"           & vbCrLf & vbCrLf & "Woche muss in der Zukunft und >=1 <=53 sein."
+        Exit Function
+    End If
+    If Einzel_KW_Jahr < this_year Or Einzel_KW_Jahr > this_year + 1 Then
+ MsgBox "Falsches Format für KW. (nicht 24/2023)"           & vbCrLf & vbCrLf & "Jahr muss aktuelles oder nächstes Jahr sein."
+        Exit Function
+    End If
+    Check_KW_Eingabe = True
+End Function
+
+
+================================================================================
+vbmodule: Globals
+================================================================================
+'! Hier werden globale Variable definiert und mit set_globals1 bzw set_globals2 gesetzt
+'
+'!Pfad zur Excel-Liste mit Ersatzstatus
+Global Const EStatus_Pfad = "V:\"
+Global Const EStatus_Name = "Ersatzkommissionen.xls"
+'!Pfad zur access-Datenbank
+Global Const DB_Pfad = "V:\Tools\Excel Makros\"
+Global Const DB_Name = "Ersatz_mit_Bestand.accdb"
+'!Access-Objekt um direkt Access-Befehle zu nutzen
+Global accApp As Object
+'!ODBC Datenbankverbindung zu Access
+Global DbConn As ADODB.Connection
+Global Const target_sheet_name_Wochen = "Wochen"
+Global Const target_sheet_name_KA_Liste = "KA_Liste"
+Global Const target_sheet_name_KA_Detail = "KA_Detail"
+'!Erzwingen, das jedes mal neu eingelesen wird (nur fuer Tests True)
+Global force_access_read As Boolean
+Global target_sheet_Wochen As Worksheet
+Global target_sheet_KA_Liste As Worksheet
+Global target_sheet_KA_Detail As Worksheet
+Global Target As Range
+Global Mittwoch_dieser_KW As Date
+Global KaListenGelesen As Boolean
+'!Für Modul KA_mit_Pos
+Sub set_globals()
+    Set target_sheet_Wochen = Application.ActiveWorkbook.Sheets(target_sheet_name_Wochen)
+    Set target_sheet_KA_Liste = Application.ActiveWorkbook.Sheets(target_sheet_name_KA_Liste)
+    Set target_sheet_KA_Detail = Application.ActiveWorkbook.Sheets(target_sheet_name_KA_Detail)
+    Dim delta_bis_Mittwoch%
+    delta_bis_Mittwoch = 3 - DatePart("w", Now(), vbMonday, vbFirstFourDays)
+    Mittwoch_dieser_KW = Int(Now() + delta_bis_Mittwoch)
+End Sub
+
+
+================================================================================
+vbmodule: Tests
+================================================================================
+Global KAListe As New KA_Liste
+Sub Test1()
+    set_globals
+    Set KAListe = New KA_Liste
+    KAListe.Init
+    AusgabeNachExcel
+End Sub
+Sub force_read()
+    force_access_read = True
+End Sub
+Sub unforce_read()
+    force_access_read = False
+End Sub
+Public Sub Wochenstatus()
+    Dim WStatus As Wochenstatus
+    set_globals
+    'Lies Daten aus Access, wenn nicht schon geschehen
+    If KAListe.Liste.Count = 0 Or force_access_read Then
+        lies_KA_aus_Access
+    End If
+    Set WStatus = New Wochenstatus
+    WStatus.BerechneStatus KAListe, Mittwoch_dieser_KW
+End Sub
+
+
+================================================================================
+vbclass: KA_Liste
+================================================================================
+Option Explicit
+Public Liste As New Collection
+Public Sub Init()
+    Dim rs As ADODB.Recordset
+    Dim sql$, sql_sel$, sql_KA$
+    Dim KA As KundenAuftrag
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    'Vereinige Tabellen Kundenauftraege und Kundenauftraege_erledigt
+    sql_sel = "select ident_nr, klassifiz, status, lt, kunde, kurzname, wertindex, zahlungsbed, lt_KW,"
+ sql_KA = sql_sel & "0 as Datum_fertig from Kundenauftraege " & "UNION "           & sql_sel & "Datum_fertig from Kundenauftraege_erledigt"
+ sql = "SELECT KA.ident_nr, lt_KW, lt,kurzname, status, zahlungsbed, fehlbestand, " & "Lager100, wertindex, Anzpos, kpl_lagernd_seit, ErsatzStatusVom, Ersatz_Status, Datum_fertig " & "FROM (" & sql_KA & ") as KA " & "INNER JOIN KA_Zusatzdaten ON KA.ident_nr = KA_Zusatzdaten.ident_nr "        & "ORDER BY lt, KA.ident_nr;"
+    Set rs = hole_recordset(sql)
+    'Alle Zusatzinfo zu allen KA holen und KA-Objekt in Liste speichern
+    Do While Not rs.EOF
+        'Objekt anlegen und Daten einlesen
+        Set KA = New KundenAuftrag
+        'Infos zum Kundenauftrag aus dem rs lesen und im Objekt KA ablegen
+        KA.Init rs
+        Me.Liste.Add KA
+        'neue Positionsliste anlegen
+        Set KA.KaPositionen = New Collection
+        rs.MoveNext
+    Loop
+End Sub
+Public Sub NachExcel(ByRef Zeile As Long)
+    Dim i%, lfnKA%, locAnzKA%
+    Dim KA As KundenAuftrag
+    For i = 1 To Me.Liste.Count
+        Set KA = Me.Liste.Item(i)
+        KA.ExcelOut Target, Zeile
+    Next i
+End Sub
+Public Sub Wochenstatus(MittwochKW As Date)
+    Dim KA As KundenAuftrag
+    Dim nKA%, nerl%, nVersand%, nFehlteil%
+    nKA = 0: nerl = 0: nVersand = 0: nFehlteil = 0
+    For Each KA In Me.Liste
+        If CDate(KA.Termin) = MittwochKW Then
+            Debug.Print KA.AuftragsNr, KA.Termin
+            nKA = nKA + 1
+            If KA.Status >= 4 Then
+                nerl = nerl + 1
+            Else
+                If KA.StatusErsatz = "Versand" Then
+                    nVersand = nVersand + 1
+                Else
+                    If KA.AllesAufLager = False Then
+                        nFehlteil = nFehlteil + 1
+                    End If
+                End If
+            End If
+        End If
+    Next
+End Sub
+
+
+================================================================================
+vbmodule: Common
+================================================================================
+'! ODBC-Verbindung zu Access
+Public Sub connect_Access()
+    If DbConn Is Nothing Then
+        ' Datenbank verbinden
+        Set DbConn = New ADODB.Connection
+        DbConn.Open "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & DB_Pfad & DB_Name & ";"
+    End If
+End Sub
+'! ODBC-Verbindung zu Access abbauen
+Public Sub disconnect_Access()
+    If Not DbConn Is Nothing Then
+        ' Datenbank verbinden
+        DbConn.Close
+        Set DbConn = Nothing
+    End If
+End Sub
+'! Access als Anwendung oeffnen
+Public Sub Open_Access()
+    If accApp Is Nothing Then
+        If Dir(DB_Pfad & DB_Name) = "" Then
+            Beep
+            MsgBox ("Keine Datei gefunden.")
+            Exit Sub
+        End If
+        Set accApp = GetObject(DB_Pfad & DB_Name)
+    End If
+End Sub
+Public Function hole_recordset(sql$) As ADODB.Recordset
+    Dim rs As ADODB.Recordset
+    Set rs = New ADODB.Recordset
+    rs.CursorLocation = adUseClient ' damit recordcount geht
+    rs.Open sql, DbConn, adOpenStatic, adLockOptimistic
+    Set hole_recordset = rs
+End Function
+'! Entfernt tabelle aus access
+Public Sub DropTable(tablename$)
+    'Tabelle tablename entfernen
+    sql = "DROP TABLE " & tablename
+    On Error Resume Next
+    DbConn.Execute sql, dbSQLPassThrough
+    If Err.Number <> -2147217865 And Err.Number <> 0 Then
+        MsgBox Err.Description, vbCritical
+    End If
+    On Error GoTo 0
+End Sub
+
+
+================================================================================
+vbmodule: Import_Unipps_Abfragen
+================================================================================
+'-------------------------------------------------------------------------------------
+'!Teile zu den Auftragspositionen lesen
+Public Sub Teile_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Tabelle entfernen und neu anlegen (ist schneller als leeren und hinterlässt keine Lücken in der Tabelle)
+    DropTable "Teile"
+    DbConn.Execute sql_teile, dbSQLPassThrough
+    'Import
+    'Offene KA filtern
+ sql_sub = "Select ident_nr From unipps_auftragkopf " & "WHERE unipps_auftragkopf.klassifiz Like ""Ersatz%"" "            & "And unipps_auftragkopf.Status < 4 And unipps_auftragkopf.Status >0 "
+    'Verknüpfe unipps_auftragpos und unipps_teil_uw mit offenen KA
+ sql = "INSERT INTO Teile ( t_tg_nr, v_ort_frei, Lager_100 )" & "SELECT DISTINCT unipps_auftragpos.t_tg_nr, v_ort_frei, " & "Left([v_ort_frei],1)=""1"" And Len(Trim([v_ort_frei]))=3 AS Lager_100 " & "FROM ((" & sql_sub & ") AS KA " & "INNER JOIN unipps_auftragpos ON KA.ident_nr = unipps_auftragpos.ident_nr1 ) " & "INNER JOIN unipps_teil_uw ON unipps_auftragpos.t_tg_nr = unipps_teil_uw.t_tg_nr " & "WHERE unipps_teil_uw.oa = 1 And unipps_teil_uw.uw = 1 "        & "ORDER BY unipps_auftragpos.t_tg_nr; "
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Lagerbestand der Teile zu den Auftragspositionen lesen
+Public Sub Teile_Lagerbestand_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Leere Tabelle
+    DropTable "tmp_Lagerbestaende"
+    'sql = "Delete * from tmp_Lagerbestaende;"
+    'Set rs = hole_recordset(sql)
+    'Import
+    'Offene KA filtern
+ sql_sub = "Select ident_nr From unipps_auftragkopf " & "WHERE unipps_auftragkopf.klassifiz Like ""Ersatz%"" "            & "And unipps_auftragkopf.Status < 4 And unipps_auftragkopf.Status >0 "
+    'Verknüpfe unipps_auftragpos und unipps_teil_uw mit offenen KA
+    'sql = "INSERT INTO tmp_Lagerbestaende ( id, t_tg_nr, Lager, auftr_nr, ort  )"
+ sql = "SELECT distinct unipps_teil_bestand.ident_nr as id, unipps_auftragpos.t_tg_nr as t_tg_nr, bestand AS Lager,auftr_nr, unipps_teil_bestand.ort " & "INTO tmp_Lagerbestaende " & "FROM ((" & sql_sub & ") AS KA " & "INNER JOIN unipps_auftragpos ON KA.ident_nr = unipps_auftragpos.ident_nr1 ) " & "INNER JOIN unipps_teil_bestand ON unipps_auftragpos.t_tg_nr = unipps_teil_bestand.ident_nr1 " & "WHERE bestandsart=4 and unipps_teil_bestand.uw = 1 "        & "ORDER BY unipps_auftragpos.t_tg_nr; "
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Lagerbestände der Teile nach t_tg_nr und auftr_nr summieren
+Public Sub Teile_Lagerbestands_Summen_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Leere Tabelle
+    DropTable "tmp_Lagerbestandssummen"
+    'sql = "Delete * from tmp_Lagerbestandssummen;"
+    'Set rs = hole_recordset(sql)
+    'Summieren
+ sql = "SELECT trim(t_tg_nr) as t_tg_nr, auftr_nr, Sum(Lager) AS Summe_Lager " & "INTO tmp_Lagerbestandssummen " & "FROM tmp_Lagerbestaende "        & "GROUP BY t_tg_nr, auftr_nr;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Auftragspositionen lesen
+Public Sub Apos_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    'Tabelle entfernen und neu anlegen (ist schneller als leeren und hinterlässt keine Lücken in der Tabelle)
+    DropTable "Auftragspos"
+    DbConn.Execute sql_auftragsposition, dbSQLPassThrough
+    'Import
+    'Offene KA filtern
+ sql_sub = "Select ident_nr From unipps_auftragkopf " & "WHERE unipps_auftragkopf.klassifiz Like ""Ersatz%"" "            & "And unipps_auftragkopf.Status < 4 And unipps_auftragkopf.Status >0 "
+    'Verknüpfe unipps_auftragpos mit offenen KA
+ sql = "INSERT INTO Auftragspos ( ident_nr1, ident_nr2, ueb_nr, pos, t_tg_nr, bedarf_pos, besch_art, " & "ist_super_pos, fehlbestand, id_apos ) " & "SELECT ident_nr1, ident_nr2, ueb_nr, pos, t_tg_nr, menge, besch_art, False AS sp, " & "True AS fb, [ident_nr1]*1000+[ident_nr2] AS id_apos " & "FROM (" & sql_sub & ") as KA INNER JOIN unipps_auftragpos " & "ON KA.ident_nr = unipps_auftragpos.ident_nr1 "        & "ORDER BY ident_nr1, ident_nr2; "
+    Set rs = hole_recordset(sql)
+End Sub
+'-------------------------------------------------------------------------------------
+'!Auftragspositionen markieren, die Unterpositionen haben
+Public Sub Apos_Superpos_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Leere Hilfs-Tabelle
+    DropTable "tmp_id"
+    'markieren
+    'Sub-Query filtert Positionen die übergeordnete Pos haben (DISTINCT => nur eine je ueb_nr)
+    'Die SUb enthält also die übergeordnete Pos ueb_nr und die Auftragsnummer
+    'sql_sub = "SELECT DISTINCT ident_nr1, ueb_nr FROM Auftragspos WHERE ueb_nr<>0"
+    'Suche die ident_nr2 der übergeordneten Pos zur ueb_nr in der Sub-Query
+    'Übertrage die id_apos in temp Tabelle
+ sql = "SELECT DISTINCT [ident_nr1]*1000+[ueb_nr] AS id_apos " & "INTO tmp_id "        & "FROM Auftragspos WHERE Auftragspos.ueb_nr<>0; "
+    Set rs = hole_recordset(sql)
+    'Setze Flag in Haupttabelle
+ sql = "UPDATE Auftragspos INNER JOIN tmp_id " & "ON Auftragspos.id_apos = tmp_id.id_apos "        & "SET ist_super_pos = True;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Kundenauftraege einlesen; neue und neu fertiggemeldete markieren
+Public Sub KA_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Tabelle tmp_import_Kundenauftraege entfernen
+    DropTable "tmp_import_Kundenauftraege"
+    'Lese Kundenauftraege in temp Tabelle
+ sql = "SELECT unipps_auftragkopf.ident_nr, unipps_auftragkopf.klassifiz, unipps_auftragkopf.status, " & " lt, kunde, kurzname, " & " netto_gesamtpreis/200000 AS wertindex, zahlungsbed," & " DatePart(""ww"",lt,2,2) & ""/"" & DatePart(""yyyy"",[lt],2,2)  AS lt_KW " & "INTO tmp_import_Kundenauftraege " & "FROM unipps_auftragkopf INNER JOIN unipps_adresse ON unipps_auftragkopf.adresse = unipps_adresse.ident_nr " & "WHERE unipps_auftragkopf.klassifiz Like ""Ersatz%"" " & " And unipps_auftragkopf.Status < 4 And unipps_auftragkopf.Status >0 "        & " ORDER BY lt, unipps_auftragkopf.ident_nr ; "
+    Set rs = hole_recordset(sql)
+    'Sub-Query filtert Aufträge aus der Haupttabelle, die nicht mehr im Import sind
+ sql_sub = "SELECT Kundenauftraege.ident_nr " & "FROM Kundenauftraege LEFT JOIN tmp_import_Kundenauftraege " & "ON Kundenauftraege.ident_nr = tmp_import_Kundenauftraege.ident_nr "            & "WHERE tmp_import_Kundenauftraege.ident_nr Is Null"
+    'Diese entfallenen Aufträge in Kundenauftraege_erledigt übernehmen, wenn UNIPPS-Status=4
+ sql = "INSERT INTO Kundenauftraege_erledigt ( ident_nr, klassifiz, status, lt, " & " kunde, kurzname, wertindex, zahlungsbed, lt_KW, Datum_fertig ) " & "SELECT unipps_auftragkopf.ident_nr, unipps_auftragkopf.klassifiz, unipps_auftragkopf.status, " & " lt, kunde, kurzname, " & " netto_gesamtpreis/200000 AS wertindex, zahlungsbed," & " DatePart(""ww"",lt,2,2) & ""/"" & DatePart(""yyyy"",[lt],2,2)  AS lt_KW, kliefer_datum as Datum_fertig " & "FROM ((" & sql_sub & ") as entfallen INNER JOIN " & "unipps_auftragkopf ON entfallen.ident_nr = unipps_auftragkopf.ident_nr) " & "INNER JOIN unipps_adresse ON unipps_auftragkopf.adresse = unipps_adresse.ident_nr " & "WHERE unipps_auftragkopf.Status >= 4  "        & " ORDER BY lt, unipps_auftragkopf.ident_nr ; "
+    Set rs = hole_recordset(sql)
+    'Setze Datum für aktuell erstmals importierte Aufträge
+ sql = "INSERT INTO KA_Zusatzdaten ( ident_nr, ErstImport ) " & "SELECT ident_nr, now() as ErstImport " & "FROM tmp_import_Kundenauftraege "        & "where ident_nr not in (SELECT ident_nr FROM KA_Zusatzdaten );"
+    Set rs = hole_recordset(sql)
+    'Tabelle Kundenauftraege entfernen
+    DropTable "Kundenauftraege"
+    'Fuege tmp Import in Tabelle Kundenauftraege
+    sql = "SELECT tmp_import_Kundenauftraege.* INTO Kundenauftraege FROM tmp_import_Kundenauftraege; "
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Für Kundenauftraege Anzahl der Positionen bestimmen
+Public Sub KA_AnzPos_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    'Tabelle tmp_KA_Anzpos entfernen
+    DropTable "tmp_KA_Anzpos"
+    'Erst Anzahl in temp Tabelle
+ sql = "SELECT ident_nr1 AS ka_id, Count(ident_nr2) AS Anz " & "INTO tmp_KA_Anzpos " & " FROM Auftragspos GROUP BY ident_nr1;"
+    Set rs = hole_recordset(sql)
+    'Dann in Haupttabelle übertragen
+ sql = "UPDATE KA_Zusatzdaten " & "INNER JOIN tmp_KA_Anzpos ON KA_Zusatzdaten.ident_nr =  tmp_KA_Anzpos.ka_id "        & "SET Anzpos = Anz;"
+    Set rs = hole_recordset(sql)
+    'rs.Close
+End Sub
+'-------------------------------------------------------------------------------------
+'!Disponierte Bestaende der Teile zu den Auftragspositionen lesen
+Public Sub Dispobedarfe_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Tabelle entfernen und neu anlegen (ist schneller als leeren und hinterlässt keine Lücken in der Tabelle)
+    DropTable "Teile_Dispobestand"
+    DbConn.Execute sql_dispobestand, dbSQLPassThrough
+    'Import
+ sql = "INSERT INTO Teile_Dispobestand (id, t_tg_nr, art, datum, beleg_nr, beleg_pos, kunde, auftr_nr, " & "verurs_nr, menge ) " & "SELECT ident_nr, Teile.t_tg_nr, art, datum, beleg_nr, " & "beleg_pos, kunde, auftr_nr, verurs_nr, menge " & "FROM Teile INNER JOIN unipps_teil_dispobest ON Teile.t_tg_nr = unipps_teil_dispobest.t_tg_nr " & "WHERE art>9 and art<14 "        '& "ORDER BY Teile.t_tg_nr, datum; "
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Für Teil-Auftrags-Kombination reservierte Lagerbestände lesen
+Public Sub Dispobestand_res_Lager_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Verknüpfe Teile_Dispobestand und tmp_Lagerbestaende über auftr_nr und t_tg_nr
+    'wenn auftr_nr<>0 schreibe Lager(menge) in Teile_Dispobestand.res_Lagerbestand
+ sql = "UPDATE Teile_Dispobestand INNER JOIN tmp_Lagerbestaende ON " & "Teile_Dispobestand.auftr_nr = tmp_Lagerbestaende.auftr_nr " & "AND Teile_Dispobestand.t_tg_nr = tmp_Lagerbestaende.t_tg_nr " & "Set Teile_Dispobestand.res_Lagerbestand = Lager "        & "WHERE tmp_Lagerbestaende.auftr_nr<>0;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Disponierte Bedarfe aufsummieren
+'!Nur Positionen ohne reservierten Lagerbestand berücksichtigen
+Public Sub Dispobestand_Summe_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    'entferne Tabelle
+    DropTable "tmp_Auftragspos_Dispobestand_Summen"
+    Start = Timer
+    'Summe der Dispo-Bedarfe die zeitlich vor der Auftragspos liegen oder selbes Datum haben
+    'in Tabelle tmp_Auftragspos_Dispobestand_Summen
+    'nur Bedarfe die keinen reservierten Bestand haben berücksichtigen
+    'Benutzt Access-Unterabfrage Auftragspos_Dispobestand_sub
+ sql = "SELECT id_apos, Sum(verbrauch) AS Bedarf_Dispo " & "INTO tmp_Auftragspos_Dispobestand_Summen " & "FROM Auftragspos_Dispobestand_sub " & "WHERE res_Lagerbestand=0 "        & "GROUP BY id_apos;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Gesamt-Bedarfe eines Auftrages an einem Teil in Tabelle Auftragspos
+'!Wichtig fuer KA die ein Teil auf mehreren Positionen enthalten
+Public Sub Apos_Gesamtbedarfe_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Entferne Tabelle
+    DropTable "tmp_Auftragspos_Gesamtbedarf"
+    'Dispo-Bedarfe  in tmp_Auftragspos_Gesamtbedarf
+ sql = "SELECT ident_nr1, t_tg_nr, Sum(bedarf_pos) AS Bedarf_Auftrag " & "INTO tmp_Auftragspos_Gesamtbedarf "        & "FROM Auftragspos GROUP BY ident_nr1, t_tg_nr;"
+    Set rs = hole_recordset(sql)
+    'Gesamt-Bedarfe in Haupttabelle Auftragspos
+ sql = "UPDATE Auftragspos INNER JOIN tmp_Auftragspos_Gesamtbedarf  " & "ON Auftragspos.t_tg_nr = tmp_Auftragspos_Gesamtbedarf.t_tg_nr " & "AND Auftragspos.ident_nr1 = tmp_Auftragspos_Gesamtbedarf.ident_nr1  "        & "SET Auftragspos.bedarf_auftrag = tmp_Auftragspos_Gesamtbedarf.bedarf_auftrag;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+    'Debug.Print sql
+End Sub
+'-------------------------------------------------------------------------------------
+'!Disponierte Bedarfe ohne Reservierung in Tabelle Auftragspos
+Public Sub Apos_Dispo_Bedarfe_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Dispo-Bedarfe in Haupttabelle Auftragspos
+ sql = "UPDATE Auftragspos INNER JOIN tmp_Auftragspos_Dispobestand_Summen " & "ON Auftragspos.id_apos = tmp_Auftragspos_Dispobestand_Summen.id_apos "        & "SET Auftragspos.bedarf_dispo = tmp_Auftragspos_Dispobestand_Summen.Bedarf_Dispo;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+    'Debug.Print sql
+End Sub
+'-------------------------------------------------------------------------------------
+'!reservierte Lagerbestaende zur Tabelle Auftragspos dazu
+Public Sub Apos_res_Lagerbestand_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    'reservierte Lagerbestaende zur Tabelle Auftragspos dazu
+    'Der Bestand kann für mehrere Pos eines Auftrages sein, wenn diese das selbe Teil beinhalten
+ sql = "UPDATE Auftragspos INNER JOIN tmp_Lagerbestandssummen " & "ON Auftragspos.ident_nr1 = tmp_Lagerbestandssummen.auftr_nr " & "AND Auftragspos.t_tg_nr = tmp_Lagerbestandssummen.t_tg_nr "        & "SET Auftragspos.Lager_res = tmp_Lagerbestandssummen.Summe_Lager;"
+    Set rs = hole_recordset(sql)
+End Sub
+'-------------------------------------------------------------------------------------
+'!freie Lagerbestaende zur Tabelle Auftragspos dazu
+Public Sub Apos_freier_Lagerbestand_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    'reservierte Lagerbestaende zur Tabelle Auftragspos dazu
+    'Der Bestand kann für mehrere Pos eines Auftrages sein, wenn diese das selbe Teil beinhalten
+ sql = "UPDATE Auftragspos INNER JOIN tmp_Lagerbestandssummen  " & "ON Auftragspos.t_tg_nr = tmp_Lagerbestandssummen.t_tg_nr " & "SET Auftragspos.Lager_frei = tmp_Lagerbestandssummen.Summe_Lager "        & "where tmp_Lagerbestandssummen.auftr_nr =0 "
+    Set rs = hole_recordset(sql)
+End Sub
+'-------------------------------------------------------------------------------------
+'!Lagerorte zu Auftragspositionen dazu
+Public Sub Apos_Lagerort_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    'Hole Lagerort aus der Teile-Tabelle
+ sql = "UPDATE Auftragspos INNER JOIN Teile ON Auftragspos.t_tg_nr = Teile.t_tg_nr "        & "SET Lager_ort = v_ort_frei, Lager100=Lager_100;"
+    Set rs = hole_recordset(sql)
+End Sub
+'-------------------------------------------------------------------------------------
+'!Fehlbedarfe Bedarfe in Tabelle Auftragspos
+'!
+'! Die Prüfung findet in mehreren Stufen statt.
+'! Als Ergebnis wird jeweils das Flag "fehlbestand" gesetzt und die Art der Prüfung als "fehlbest_status" gesetzt.
+'! "fehlbest_status"=0 (default) heißt ungeprüft
+'! Alle Prüfungen werden nur für bisher ungeprüfte Positionen durchgeführt
+'! => Sobald einmal das Flag "fehlbestand" gesetzt ist (True oder False), wird es nicht mehr neu gesetzt,
+'!    da zugleich "fehlbest_status" mit einem Wert > 0 besetzt wird.
+'! Da die Prüfungen aufeinander aufbauen, ist die Reihenfolge wichtig
+'!
+'! Prüfung 1: Hat die Auftragsposition Unterpositionen ?
+'!    Ja: Es gibt keinen Fehlbestand, da dieser für die Unterpositionen geprüft wird
+'!        fehlbest_status=1 ; fehlbestand=False
+'!
+'! Prüfung 2.1: Gibt es für die Auftragsposition einen reservierten Bestand (Lager_res>0)
+'!              und ist der GRÖSSER als der Gesamtbedarf an diesem Teil für diesen Auftrag (Lager_res>=bedarf_auftrag)
+'!              Grund: Ein Teil kann auf mehreren Positionen eines Auftrags vorkommen.
+'!                     Der reservierte Bestand "Lager_res" gilt immer für alle Positionen zusammen.
+'!                     "bedarf_auftrag" ist daher die Summe der Bedarfs-Mengen eines Teils im Auftrag
+'!    Ja: Es gibt keinen Fehlbestand; der reservierte Lagerbestand ist größer als der Bedarf des Auftrags
+'!        fehlbest_status=2 ; fehlbestand=False
+'!
+'! Prüfung 2.2: Gibt es für die Auftragsposition einen reservierten Bestand (Lager_res>0)
+'!              und ist der KLEINER als der Gesamtbedarf an diesem Teil für diesen Auftrag (Lager_res<bedarf_auftrag)
+'!    Ja: Es gibt einen Fehlbestand; der reservierte Lagerbestand zu klein
+'!        fehlbest_status=91 ; fehlbestand=True
+'!
+'! Prüfung 3.1: Gibt es KEINEN freien Lagerbestand für die Auftragsposition (Lager_frei=0)
+'!              Grund: Die Positionen mit reserviertem Bestand wurden schon geprüft (s. oben)
+'!                     Für diese Position gibt es keinen reservierten, es muss der freie Bestand reichen
+'!    Ja: es gibt KEINEN freien Lagerbestand
+'!        fehlbest_status=92 ; fehlbestand=True
+'!
+'! Prüfung 3.2: Gibt es freien Lagerbestand (Lager_frei=0)
+'!              und ist der GRÖSSER als der disponierte Bedarf für die Auftragsposition (Lager_frei>=bedarf_dispo)
+'!              Grund: der disponierte Bedarf "bedarf_dispo" enthält die Bedarfe aller Aufträge deren Termin
+'!                     kleiner oder gleich dem Termin unseres "Prüf"-Auftrags ist,
+'!                     jedoch ohne die Bedarfe, für die es reservierten Bestand gibt.
+'!                     Reservierter Bestand fließt weder in "bedarf_dispo" noch in "Lager_frei" ein
+'!    Ja: Der freie Lagerbestand ist >= als der disponierte Bedarf => kein Fehlbestand
+'!        fehlbest_status=3 ; fehlbestand=False
+'!
+'! Prüfung 3.3: Gibt es freien Lagerbestand (Lager_frei=0)
+'!              und ist der KLEINER als der disponierte Bedarf für die Auftragsposition (Lager_frei<bedarf_dispo)
+'!              Grund: wie 3.2
+'!    Ja: Der freie Lagerbestand ist kleiner als der disponierte Bedarf =>  Fehlbestand
+'!        fehlbest_status=93 ; fehlbestand=True
+Public Sub Apos_FehlBedarfe_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    '1: Positionen mit Unterpos. haben nie Fehlbedarf (Bestand wird bei den Unterpos gecheckt)
+ sql = "UPDATE Auftragspos " & "SET fehlbestand = False, fehlbest_status=1 "        & "WHERE fehlbest_status=0 and ist_super_pos=True;"
+    Set rs = hole_recordset(sql)
+    '2.1: res Bestand ist grösser 0 und als Gesamtbedarf
+ sql = "UPDATE Auftragspos " & "SET fehlbestand = False, fehlbest_status=2 "        & "WHERE fehlbest_status = 0 And Lager_res >0 And Lager_res >= bedarf_auftrag;"
+    Set rs = hole_recordset(sql)
+    '2.2 res Bestand ist grösser 0 und kleiner als Gesamtbedarf
+ sql = "UPDATE Auftragspos " & "SET fehlbestand = True, fehlbest_status=91 "        & "WHERE fehlbest_status = 0 And Lager_res >0 And Lager_res < bedarf_auftrag;"
+    Set rs = hole_recordset(sql)
+    '3.1 freier Bestand ist = 0
+ sql = "UPDATE Auftragspos " & "SET fehlbestand = True, fehlbest_status=92 "        & "WHERE fehlbest_status = 0 And Lager_frei=0;"
+    Set rs = hole_recordset(sql)
+    '3.2 freier Bestand ist >0 und größer als der disponierte Bedarf
+ sql = "UPDATE Auftragspos " & "SET fehlbestand = False, fehlbest_status=3 "        & "WHERE fehlbest_status = 0 And Lager_frei>0  And Lager_frei>=bedarf_dispo;"
+    Set rs = hole_recordset(sql)
+    '3.3 freier Bestand ist >0 und kleiner als der disponierte Bedarf
+ sql = "UPDATE Auftragspos " & "SET fehlbestand = True, fehlbest_status=93 "        & "WHERE fehlbest_status = 0 And Lager_frei>0  And Lager_frei<bedarf_dispo;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'!Flag fuer FehlBedarfe in Tabelle KA_Zusatzdaten setzen
+Public Sub KA_FehlBedarfe_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Tabelle tmp_id entfernen
+    DropTable "tmp_id"
+    'tmp_id: ids der Aufträge, die mind 1 Teil haben, das nicht auf Lager 100 liegt
+ sql = "SELECT DISTINCT ident_nr1 as id INTO tmp_id "        & "FROM Auftragspos WHERE fehlbestand=True;"
+    Set rs = hole_recordset(sql)
+    'Erst alles auf Nein setzen
+    sql = "UPDATE KA_Zusatzdaten SET fehlbestand = False;"
+    Set rs = hole_recordset(sql)
+    DoEvents
+    'Fehl-Bedarfe in Tabelle KA_Zusatzdaten
+ sql = "UPDATE KA_Zusatzdaten INNER JOIN tmp_id " & "ON KA_Zusatzdaten.ident_nr = tmp_id.id "        & "SET fehlbestand = TRUE "
+    Set rs = hole_recordset(sql)
+    DoEvents
+    'Debug.Print Format(Timer - Start, "#0.00")
+ End Sub
+'-------------------------------------------------------------------------------------
+'!Check ob alle Teile des KA in Lagerbereich 100 liegen
+'!Flag in Tabelle KA_Zusatzdaten setzen
+Public Sub KA_Lager100_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Tabelle tmp_id entfernen
+    DropTable "tmp_id"
+    'tmp_id: ids der Aufträge, die mind 1 Teil haben, das nicht auf Lager 100 liegt
+ sql = "SELECT DISTINCT ident_nr1 as id INTO tmp_id "        & "FROM Auftragspos WHERE Lager100=False;"
+    Set rs = hole_recordset(sql)
+ sql = "UPDATE KA_Zusatzdaten INNER JOIN tmp_id " & "ON KA_Zusatzdaten.ident_nr = tmp_id.id "        & "SET Lager100 = FALSE "
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Ersatzstatus in Tabelle KA_Zusatzdaten
+Public Sub KA_Ersatzstatus_2Access()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+ sql = "UPDATE KA_Zusatzdaten INNER JOIN Status_Ersatz " & "ON KA_Zusatzdaten.ident_nr = Status_Ersatz.ka_id "        & "SET Ersatz_Status = Status_Ersatz.status "
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+
+
+================================================================================
+vbmodule: Historie
+================================================================================
+'!Berechnet durch neuen Import entstande Unterschiede (Vorher-Nachher-Vergleich)
+'!und legt diese mit Datum in Historie_xx-Tabellen ab
+'!Läuft schnell, daher ohne Fortschrittsnazeige
+Public Function Access_Historie_aktualisieren()
+    'Kundenauftraege, die seit dem letzten Einlesen erstmals komplett auf Lager liegen, in Tabelle Historie_KA eintragen
+    HistorieKAlagerndStatus
+    DoEvents
+    'Auftragspositionen, die seit dem letzten Einlesen erstmals ausreichend auf Lager liegen, in Tabelle Historie_Auftragspos eintragen
+    HistorieAuftragsposLagerndStatus
+    DoEvents
+    'Status im Ersatz bei Änderungen zwischen "Status_Ersatz" und "Ersatzstatus_backup"
+    'in "Historie_Auftragspos_Statuswerte" aufnehmen
+    HistorieErsatzStatus
+    DoEvents
+End Function
+'-------------------------------------------------------------------------------------
+'!Auftragspositionen, die seit dem letzten Einlesen erstmals ausreichend auf Lager liegen, in Tabelle Historie_Auftragspos eintragen
+Public Sub HistorieAuftragsposLagerndStatus()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Erst mal alle Einträge rücksetzen, falls Auftragspositionen nicht mehr komplett sind, die es vorher waren
+ sql = "DELETE Historie_Auftragspos.* FROM Historie_Auftragspos WHERE id_apos in "        & "(SELECT id_apos FROM Auftragspos WHERE fehlbestand=Yes);"
+    Set rs = hole_recordset(sql)
+    'Filtere Kombi aus Id und Status aus "Auftragspos", die schon in "Historie_Auftragspos" sind
+ sql_sub = "select id_apos from Historie_Auftragspos "            & "where Historie_Auftragspos.status=50 AND Auftragspos.id_apos = Historie_Auftragspos.id_apos "
+    'Füge diejenigen in Historie_Auftragspos dazu, die noch nicht drin waren
+    'und die keine Fehlpos haben
+ sql = "INSERT INTO Historie_Auftragspos (id_apos,status,datum) " & "SELECT Auftragspos.id_apos, 50 AS status, now() AS datum " & "FROM Auftragspos " & "where fehlbestand = False "        & "And Not Exists (" & sql_sub & ");"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Historie für KA alle Teile auf Lager aktualisieren
+Public Sub HistorieKAlagerndStatus()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Erst mal alle Einträge rücksetzen, falls Aufträge nicht mehr komplett sind die es vorher waren
+    'In Historie_KA
+ sql = "DELETE Historie_KA.* FROM Historie_KA WHERE ident_nr  in "        & "(SELECT ident_nr FROM KA_Zusatzdaten WHERE fehlbestand=Yes);"
+    Set rs = hole_recordset(sql)
+    'und in KA_Zusatzdaten
+    sql = "UPDATE KA_Zusatzdaten SET KA_Zusatzdaten.kpl_lagernd_seit = 0;"
+    Set rs = hole_recordset(sql)
+    'Filtere Kombi aus Id und Status aus "Kundenauftraege", die schon in "Historie_KA" sind
+ sql_sub = "select ident_nr, status from Historie_KA "            & "where Historie_KA.status=50 AND Kundenauftraege.ident_nr = Historie_KA.ident_nr "
+    'Füge diejenigen in Historie_KA dazu, die noch nicht drin waren
+    'und die keine Fehlpos haben und status<4
+ sql = "INSERT INTO Historie_KA ( ident_nr, status, datum ) " & "SELECT Kundenauftraege.ident_nr, 50 AS status, now() AS datum " & "FROM Kundenauftraege INNER JOIN KA_Zusatzdaten ON KA_Zusatzdaten.ident_nr = Kundenauftraege.ident_nr " & "where KA_Zusatzdaten.fehlbestand = False And Kundenauftraege.Status < 4 "        & "And Not Exists (" & sql_sub & ");"
+    Set rs = hole_recordset(sql)
+    'Datum in Tabelle Kundenauftraege dazu, seit dem alle Teile auf Lager liegen
+ sql = "UPDATE KA_Zusatzdaten " & "INNER JOIN Historie_KA ON KA_Zusatzdaten.ident_nr = Historie_KA.ident_nr "        & "SET kpl_lagernd_seit = Datum;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+'-------------------------------------------------------------------------------------
+'!Historie für Ersatzstatus aktualisieren
+Public Sub HistorieErsatzStatus()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    Dim Start As Double
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    Start = Timer
+    'Filtere Kombi aus Id und Status aus "Status_Ersatz", die schon in "Historie_Ersatzstatus" sind
+ sql_sub = "select ka_id, status from Historie_Ersatzstatus " & "where  status_Ersatz.status = Historie_Ersatzstatus.status "            & "AND Status_Ersatz.ka_id = Historie_Ersatzstatus.ka_id "
+    'Füge diejenigen in Historie_Ersatzstatus dazu, die noch nicht drin waren
+ sql = "INSERT INTO Historie_Ersatzstatus ( ka_id, status, datum ) " & "SELECT Status_Ersatz.ka_id, Status_Ersatz.status, now() AS datum "        & "FROM Status_Ersatz where Not Exists (" & sql_sub & ")"
+    Set rs = hole_recordset(sql)
+    'Datum des neuesten Eintrags in Historie_Ersatzstatus in Tabelle Kundenauftraege eintragen
+    '--------------------
+    'Zuerst in temp Tabelle
+    DropTable "tmp_letzter_eintrag_Historie_Ersatz"
+ sql = "SELECT ka_id, Max(datum) AS ErsatzStatusVom " & "INTO tmp_letzter_eintrag_Historie_Ersatz "        & "FROM Historie_Ersatzstatus GROUP BY ka_id;"
+    Set rs = hole_recordset(sql)
+ sql = "UPDATE KA_Zusatzdaten INNER JOIN tmp_letzter_eintrag_Historie_Ersatz " & "ON KA_Zusatzdaten.ident_nr = tmp_letzter_eintrag_Historie_Ersatz.ka_id "        & "SET KA_Zusatzdaten.ErsatzStatusVom=tmp_letzter_eintrag_Historie_Ersatz.ErsatzStatusVom;"
+    Set rs = hole_recordset(sql)
+    'Debug.Print Format(Timer - Start, "#0.00")
+End Sub
+
+
+================================================================================
+vbmodule: Import_Ablauf
+================================================================================
+'Anzahl der Importschritte für Fortschrittsanzeige
+Public Const maxSchritt = 11
+'!Liest neuen Datenstand aus UNIPPS und Ersatzkommissionen.xls nach Access
+'!hauptroutine des Imports
+Public Sub Import2Access()
+    'Prüfe ob Access-Datenbank nicht gerade von anderem Benutzer upgedatet wird
+    If DB_locked Then
+        MsgBox "Abbruch. Es läuft schon ein Import.", vbCritical
+        Exit Sub
+    End If
+    'Blockiere Datenbank, da Tabellen gelöscht (gedroppet) werden sollen
+    schreibe_Lock True
+    'lese Bearbeitungsstand in Ersatzabteilung aus Ersatzkommissionen.xls
+    FortschrittForm.Show
+    FortschrittForm.AktionsbezTxt.Caption = "1 (" & maxSchritt & ") lese Status aus Ersatzkommissionen.xls"
+    DoEvents
+    lies_Ersatz_Status_aus_Excel
+    On Error GoTo nio
+    'Daten neu aus UNIPPS einlesen
+    Unipps_2Access
+    'Erstelle Vorher-Nachher-Vergleiche
+    Access_Historie_aktualisieren
+    'merke Einlesedatum in Access
+    schreibe_letzten_Datenstand Now()
+    disconnect_Access
+    'Sofort Daten aus Access in Excel-Klassen lesen
+    FortschrittForm.AktionsbezTxt.Caption = "Lese Daten aus Access"
+    lies_KA_aus_Access
+    GoTo ende
+nio:
+    schreibe_letzten_Datenstand CDate("1.1.1900")
+    GoTo ende
+ende:
+    On Error GoTo 0
+    'Datenbank frei geben
+    schreibe_Lock False
+    disconnect_Access
+    mainForm.Show
+    FortschrittForm.Hide
+End Sub
+Public Sub Unipps_2Access()
+    Dim Schrittnr%
+    FortschrittForm.Show
+    Schrittnr = 2
+    Start = Timer 'nur test
+    ' Kundenauftraege
+    '--------------------------------------------------------------------------
+    'Alle offenen KA über Zwischentabelle tmp_import_Kundenauftraege in Tabelle "Kundenauftraege"
+    'für neue und neu fertiggemeldete Datum speichern
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Kundenaufträge lesen")
+    KA_2Access
+    ' Auftrags-Positionen der Kundenauftraege
+    '--------------------------------------------------------------------------
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Auftragspositionen lesen")
+    'Auftragspositionen zu den KA in Tabelle Auftragspos lesen
+    Apos_2Access
+    'Auftragspositionen markieren, die Unterpositionen haben
+    'verwendet Zwischentabelle tmp_Auftragspos_Superpos
+    Apos_Superpos_2Access
+    ' Teile zu den Positionen der Kundenauftraege und deren Lagerbestände
+    '--------------------------------------------------------------------------
+    'Teile zu den Auftragspositionen lesen
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Teile lesen")
+    Teile_2Access
+    'Lagerbestand der Teile in temp Tabelle Teil_tmp_Lagerbestaende
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Lagerbestände lesen")
+    Teile_Lagerbestand_2Access
+    'Lagerbestände der Teile nach t_tg_nr und auftr_nr summieren (Tabelle Teil_tmp_Lagerbestandssummen)
+    'Bestände mit Auftragsnr=0 sind freie Bestände
+    Teile_Lagerbestands_Summen_2Access
+    ' Disponierte Bedarfe der Teile zu den Auftragspositionen ermitteln
+    '--------------------------------------------------------------------------
+    'Disponierte Bedarfe der Teile zu den Auftragspositionen in Tabelle "Teile_Dispobestand" lesen
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Dispobedarf lesen")
+    Dispobedarfe_2Access
+    'Für Teil-Auftrags-Kombination reservierte Lagerbestände nach Teile_Dispobestand.res_Lagerbestand
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Dispobedarf aufbereiten")
+    Dispobestand_res_Lager_2Access
+    'Disponierte Bedarfe ohne Reservierung je Auftrag/Teil in tmp_Auftragspos_Dispobestand_Summen aufsummieren,
+    Dispobestand_Summe_2Access
+    ' Auftragspos um die wesentlichen Verbrauchs und Bestandsdaten ergänzen
+    '--------------------------------------------------------------------------
+    '------ Auftragspos.bedarf_auftrag ---------
+    'Gesamt-Bedarfe eines Auftrages an einem Teil nach "Auftragspos.bedarf_auftrag"
+    '(Es gibt KA die ein Teil auf mehreren Positionen enthalten)
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Bedarf der Pos. ermitteln")
+    Apos_Gesamtbedarfe_2Access
+    '------ Auftragspos.bedarf_dispo ---------
+    'Disponierte Bedarfe ohne Reservierung in Haupttabelle Auftragspos.bedarf_dispo übernehmen
+    Apos_Dispo_Bedarfe_2Access
+    '------ Auftragspos.Lager_res ---------
+    'reservierte Lagerbestaende zur Tabelle Auftragspos dazu
+    'Der Bestand kann für mehrere Pos eines Auftrages sein, wenn diese das selbe Teil beinhalten
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Lagerbestand ermitteln")
+    Apos_res_Lagerbestand_2Access
+    '------ Auftragspos.Lager_frei ---------
+    'freie Lagerbestaende zur Tabelle Auftragspos dazu
+    'Der Bestand kann für mehrere Pos eines Auftrages sein, wenn diese das selbe Teil beinhalten
+    Apos_freier_Lagerbestand_2Access
+    'Lagerorte zur Tabelle Auftragspos dazu
+    Apos_Lagerort_2Access
+    ' Fehlteile ermitteln
+    '--------------------------------------------------------------------------
+    'Fehlbedarfe Bedarfe in Tabelle Auftragspos
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Fehlteile ermitteln")
+    Apos_FehlBedarfe_2Access
+    'Fehlbedarfe Bedarfe in Tabelle Kundenauftraege
+    'Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Fehlteile In KA kennzeichnen")
+    KA_FehlBedarfe_2Access
+    'Nacharbeiten
+    '---------------------------------------------------------------------------------
+    'Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "reine Lagerteile (Lagerbereich 100) kennzeichnen")
+    'Check ob alle Teile des KA in Lagerbereich 100 liegen
+    KA_Lager100_2Access
+    'Für Kundenauftraege Anzahl der Positionen bestimmen
+    '(erst nach Lesen Auftrags-Positionen möglich)
+    KA_AnzPos_2Access
+    'Ersatzstatus in Tabelle KA_Zusatzdaten
+    KA_Ersatzstatus_2Access
+    Schrittnr = FortschrittZeigen(Schrittnr, maxSchritt, "Historie ermitteln")
+    Debug.Print Schrittnr - 1, Format(Timer - Start, "#0.00"): Start = Timer 'nur test
+End Sub
+'Helper
+'-----------------------------------------------------------------------------------
+'!Lies das Datum des letzten UNIPPS-Imports aus Access-Tabelle ProgParameter
+Public Function hole_letzten_Datenstand()
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    sql = "SELECT letztesUpdate FROM ProgParameter;"
+    Set rs = hole_recordset(sql)
+    hole_letzten_Datenstand = rs.Fields(0)
+End Function
+Public Function DB_locked() As Boolean
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    sql = "select locked from ProgParameter;"
+    Set rs = hole_recordset(sql)
+    DB_locked = rs.Fields("locked")
+End Function
+Public Sub schreibe_Lock(verriegeln As Boolean)
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    If verriegeln Then
+        sql = "UPDATE ProgParameter SET ProgParameter.locked=-1;"
+    Else
+        sql = "UPDATE ProgParameter SET ProgParameter.locked=0;"
+    End If
+    Set rs = hole_recordset(sql)
+End Sub
+'Schreibt das Datum des letzten UNIPPS-Imports in Access-Tabelle ProgParameter
+Public Function schreibe_letzten_Datenstand(datum As Date)
+    Dim rs As ADODB.Recordset
+    Dim sql$
+    'Verbinde zu Access wenn nötig
+    connect_Access
+    sql = "UPDATE ProgParameter SET ProgParameter.letztesUpdate=""" & CStr(datum) & """;"
+    Set rs = hole_recordset(sql)
+End Function
+'Zeigt den Fortgang in Formular an
+Public Function FortschrittZeigen(Schrittnr%, maxSchritt%, Text$)
+    FortschrittForm.AktionsbezTxt.Caption = CStr(Schrittnr%) & " (" & CStr(maxSchritt) & ") " & Text
+    FortschrittZeigen = Schrittnr + 1
+    DoEvents
+End Function
+
+
+================================================================================
+vbmodule: Import_Ersatz_Excelsheet
+================================================================================
+'!Modul zum Lesen des Bearbeitungsstands in der Ersatzabteilung aus Ersatzkommissionen.xls
+'
+'!Es wird zunächst die kleinste und die höchste Id aller nicht gelieferten Kundenaufträge ermittelt,
+'!deren Liefertermin in der Vergangenheit oder bis 3 Wochen in der Zukunft liegt
+'!Mit diesen Id's first_KA, last_KA werden in Excel die Blätter gelesen, die diesen ID-Bereich enthalten
+'!Dazu werden die ersten 3 Zeichen der Id mit den ersten 3 Zeichen der Sheetnamen verglichen
+'!Alle Paaren aus nicht leeren Auftragsnummern und Status dieser Blätter, werden in Access gespeichert
+'!Darunter sind in der Regel auch Id's, die nicht aus dem Bereich first_KA, last_KA stammen
+'!Umgekehrt kann der Bereich Id'S enthalten, die nocht nicht in Excel eingetragen sind
+Public Sub lies_Ersatz_Status_aus_Excel()
+    Dim Con As ADODB.Connection
+    Dim rs As ADODB.Recordset
+    Dim Status_Mappe As Workbook
+    Dim mysheet As Worksheet
+    'Dim blattname(100) As Long
+    'Dim n_sheets% 'Antzahl Blätter mit KA
+    Dim first_KA, last_KA As Long
+    ' Datenbank öffnen
+    Set Con = New ADODB.Connection
+    Con.Open "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & DB_Pfad & DB_Name & ";"
+    'Zuerst den Bereich von Tabellenblättern ermitteln der in Excel durchsucht werden muss
+    'dazu wird die kleinste und die groesste KA-Nummer ermittelt
+    'wobei nur der Bereich mit Lieferterminen aus der Vergangenheit bis zur aktuellen KW + 3 Wochen betrachtet wird
+    Set rs = New ADODB.Recordset
+    rs.Open hole_sql_KA_3Wochen, Con, adOpenStatic, adLockOptimistic
+    first_KA = rs.Fields("ident_nr")
+    rs.MoveLast
+    last_KA = rs.Fields("ident_nr")
+    rs.Close
+    'nur die ersten 3 Zahlen (Tausender) verwenden
+    first_KA_1000nds = Left(first_KA, 3)
+    last_KA_1000nds = Left(last_KA, 3)
+    ' Access-Tabelle für die Daten aus Excel öffnen
+    rs.Open "delete from Status_Ersatz;", Con
+    rs.Open "Status_Ersatz", Con, adOpenStatic, adLockOptimistic, adCmdTable
+    'Excel oeffnen
+    'Set Status_Mappe = Oeffne_Excel(EStatus_Name, EStatus_Pfad)
+    Set Status_Mappe = Workbooks.Open(Filename:=EStatus_Pfad & EStatus_Name, ReadOnly:=True)
+    Dim i%, j%
+    'Durchsuche alle Excel-Blätter von der kleinsten zur grössten KA-Identnummer
+    For i = first_KA_1000nds To last_KA_1000nds
+        'Gibt es ein Sheet dessen Name so beginnt?
+        For j = 1 To Status_Mappe.Worksheets.Count
+            sname = Left(Trim(Status_Mappe.Worksheets(j).Name), 3)
+            If sname = i Then
+                'Debug.Print i, sname
+                Durchsuche_Excel_Blatt Status_Mappe.Worksheets(j), rs
+            End If
+        Next j
+    Next i
+    Status_Mappe.Close savechanges:=False
+End Sub
+'!Speichert alle Einträge "Kundenauftragsid"/"Status" eines Excel-Sheets in Access-Tabelle
+Private Sub Durchsuche_Excel_Blatt(mysheet As Worksheet, rs As Recordset)
+    Dim row, col As Integer
+    For row = 1 To 50
+        For col = 1 To 40 Step 2
+            ka_id = Trim(mysheet.Cells(row, col))
+            Status = Trim(mysheet.Cells(row, col + 1))
+            If ka_id <> "" And Status <> "" Then
+                rs.AddNew
+                rs.Fields("ka_id").Value = ka_id
+                rs.Fields("status").Value = Status
+                rs.Update
+            End If
+        Next col
+    Next row
+End Sub
+'!ermittelt SQl um gewünschten Bereich von Aufträgen aus Access zu lesen
+Public Function hole_sql_KA_3Wochen() As String
+    Dim maxdate As Date
+    Dim delta_bis_Mittwoch%
+    Dim maxdate_sql$
+    delta_bis_Mittwoch = DatePart("w", Now(), vbMonday, vbFirstFourDays) - 3
+    '
+    maxdate = Now() + delta_bis_Mittwoch + 3 * 7 ' Mittwoch dieser KW + 3 Wochen
+    maxdate_sql = Format(maxdate, "yyyy-mm-dd")
+    hole_sql_KA_3Wochen = "select ident_nr from Kundenauftraege where lt <=#" & maxdate_sql & "# order by ident_nr;"
+End Function
+
+
+================================================================================
+vbmodule: sql_create_table
+================================================================================
+'! Modul mit SQL zum Anlegen einiger Tabellen
+'
+ Public Const sql_auftragsposition = "CREATE TABLE Auftragspos ( " & "id_apos INTEGER CONSTRAINT pk PRIMARY KEY," & "ident_nr1 INTEGER, " & "ident_nr2 INTEGER," & "ueb_nr INTEGER," & "pos CHAR," & "t_tg_nr CHAR," & "besch_art INTEGER, " & "Lager_ort CHAR," & "Lager100 BIT DEFAULT 0," & "Lager_frei INTEGER DEFAULT 0," & "Lager_res INTEGER DEFAULT 0, " & "bedarf_auftrag INTEGER DEFAULT 0, " & "bedarf_pos INTEGER DEFAULT 0, " & "bedarf_dispo INTEGER DEFAULT 0, " & "ist_super_pos BIT DEFAULT 0, " & "fehlbestand BIT DEFAULT -1, " & "fehlbest_status INTEGER DEFAULT 0"                                  & ");"
+ Public Const sql_teile = "CREATE TABLE Teile ( " & "t_tg_nr CHAR CONSTRAINT pk PRIMARY KEY," & "v_ort_frei CHAR," & "Lager_100 BIT DEFAULT 0," & "Lagerbestand INTEGER DEFAULT 0"                                  & ");"
+ Public Const sql_dispobestand = "CREATE TABLE Teile_Dispobestand ( " & "id INTEGER CONSTRAINT pk PRIMARY KEY," & "t_tg_nr CHAR," & "art INTEGER, " & "datum DATETIME," & "beleg_nr INTEGER," & "beleg_pos INTEGER," & "kunde INTEGER," & "auftr_nr INTEGER DEFAULT 0," & "verurs_nr INTEGER DEFAULT 0," & "menge INTEGER DEFAULT 0," & "res_Lagerbestand INTEGER DEFAULT 0 "                                  & ");"
+
+
+================================================================================
+vbclass: Wochenstatus
+================================================================================
+'!Anzahl aller KA einer Woche
+Public nKA%
+'!Anzahl der erledigten KA (Status=> 4)
+Public nerl%
+'!Anzahl der offenen KA (Status < 4)
+Public noffen%
+'!Anzahl der offenen KA, deren Teile alle auf 100'er lagerorten liegen
+Public nLager100%
+'!Anzahl der offenen KA, deren Teile nicht alle auf 100'er lagerorten liegen
+Public nErsatz%
+'!Anzahl der der offenen KA, die im Versand bereit stehen
+Public nVersand%
+'!Anzahl der der offenen KA, für die Teile fehlen
+Public nFehlteil%
+Public Sub BerechneStatus(KAListe As KA_Liste, MittwochKW As Date)
+    Dim KA As KundenAuftrag
+    nKA = 0: nerl = 0: nVersand = 0: nFehlteil = 0
+    For Each KA In KAListe.Liste
+        If CDate(KA.Termin) = MittwochKW Then
+            'richtige Woche
+            nKA = nKA + 1
+            If KA.Status >= 4 Then
+                'erledigte
+                nerl = nerl + 1
+            Else
+                'Ab hier offene
+                If KA.StatusErsatz = "Versand" Then
+                    nVersand = nVersand + 1
+                Else
+                    'Ab hier offene ohne "Versand"
+                    If KA.AllesAufLager Then
+                        'Ab hier entweder für Ersatz oder reine Lagerteile
+                        If KA.AllesAuf100erLager Then
+                            nLager100 = nLager100 + 1
+                        End If
+                    Else
+                        nFehlteil = nFehlteil + 1
+                    End If
+                End If
+            End If
+        End If
+    Next
+    noffen = nKA - nerl
+    nErsatz = noffen - nVersand - nFehlteil - nLager100
+ 'Debug.Print "Anzahl KA: " & nKA & " erledigt: " & nerl & " im Versand: " & nVersand    '            & " im Ersatz: " & nErsatz & " mit Fehlteilen: " & nFehlteil
+End Sub
+
+
+<EndofFile>

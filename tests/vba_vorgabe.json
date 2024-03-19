@@ -1,0 +1,704 @@
+{
+    "Ersatz_Auftragsverfolgung": {
+        "Tabelle2": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "Modul1": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "Tabelle5": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        }
+    },
+    "Ersatz_Auftragsverfolgung_Makros": {
+        "DieseArbeitsmappe": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "ExcelAusgabe": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 8
+        },
+        "KundenAuftrag": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 16,
+            "n_methods": 5
+        },
+        "Auftragsposition": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 14,
+            "n_methods": 2
+        },
+        "mainForm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 6
+        },
+        "Globals": {
+            "vbtype": "vbmodule",
+            "n_const": 7,
+            "n_vars": 9,
+            "n_methods": 1
+        },
+        "Tests": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 4
+        },
+        "KA_Liste": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 3
+        },
+        "Common": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 5
+        },
+        "Import_Unipps_Abfragen": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 19
+        },
+        "Historie": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 4
+        },
+        "Import_Ablauf": {
+            "vbtype": "vbmodule",
+            "n_const": 1,
+            "n_vars": 0,
+            "n_methods": 7
+        },
+        "Import_Ersatz_Excelsheet": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 3
+        },
+        "sql_create_table": {
+            "vbtype": "vbmodule",
+            "n_const": 3,
+            "n_vars": 0,
+            "n_methods": 0
+        },
+        "Wochenstatus": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 7,
+            "n_methods": 1
+        }
+    },
+    "Ersatz_Etiketten Win10": {
+        "Globals": {
+            "vbtype": "vbmodule",
+            "n_const": 25,
+            "n_vars": 13,
+            "n_methods": 1
+        },
+        "Menues": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 6
+        },
+        "Spielwiese": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "Auftragsbestand": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 13
+        },
+        "Formatieren": {
+            "vbtype": "vbmodule",
+            "n_const": 2,
+            "n_vars": 0,
+            "n_methods": 9
+        },
+        "Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 2
+        },
+        "Vorauswahl_frm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 5
+        },
+        "Status": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 2
+        },
+        "Import_frm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 5
+        },
+        "Transfer_2_print_Sheet": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 6
+        },
+        "multi_Auswahl_frm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 12
+        },
+        "Auswahl_frm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 5
+        },
+        "Const_Spalten_Namen": {
+            "vbtype": "vbmodule",
+            "n_const": 15,
+            "n_vars": 0,
+            "n_methods": 0
+        }
+    },
+    "Ersatz_Etiketten": {
+        "Globals": {
+            "vbtype": "vbmodule",
+            "n_const": 25,
+            "n_vars": 13,
+            "n_methods": 1
+        },
+        "Menues": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 6
+        },
+        "Spielwiese": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "Auftragsbestand": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 13
+        },
+        "Formatieren": {
+            "vbtype": "vbmodule",
+            "n_const": 2,
+            "n_vars": 0,
+            "n_methods": 9
+        },
+        "Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 2
+        },
+        "Vorauswahl_frm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 5
+        },
+        "Status": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 2
+        },
+        "Import_frm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 5
+        },
+        "Transfer_2_print_Sheet": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 6
+        },
+        "xx_veraltet": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 2
+        },
+        "multi_Auswahl_frm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 12
+        },
+        "Auswahl_frm": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 5
+        },
+        "Const_Spalten_Namen": {
+            "vbtype": "vbmodule",
+            "n_const": 15,
+            "n_vars": 0,
+            "n_methods": 0
+        }
+    },
+    "Etiketten Win10": {
+        "DieseArbeitsmappe": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 3
+        },
+        "Tabelle4": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "UI_Buttons": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 4
+        }
+    },
+    "Etiketten": {
+        "DieseArbeitsmappe": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 3
+        },
+        "Tabelle4": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "UI_Buttons": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 4
+        }
+    },
+    "KE_Tools Win10 V2": {
+        "Konstruktoren": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 7
+        },
+        "XML_Toolbox": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 6
+        },
+        "XL_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 6
+        },
+        "QM2XL_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 5
+        },
+        "Pos_unterpos_records": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 4,
+            "n_methods": 4
+        },
+        "record": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 6
+        },
+        "QM_XML_Doc": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 8,
+            "n_methods": 7
+        },
+        "DB_Reader": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 15
+        },
+        "Kalenderwoche": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 5
+        },
+        "Datum": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 5
+        },
+        "UNIPPS2Excel_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 3,
+            "n_vars": 0,
+            "n_methods": 15
+        }
+    },
+    "KE_Tools Win10": {
+        "Konstruktoren": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 7
+        },
+        "XML_Toolbox": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 6
+        },
+        "XL_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 6
+        },
+        "QM2XL_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 5
+        },
+        "Pos_unterpos_records": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 4,
+            "n_methods": 4
+        },
+        "record": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 6
+        },
+        "QM_XML_Doc": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 8,
+            "n_methods": 7
+        },
+        "DB_Reader": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 14
+        },
+        "Kalenderwoche": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 5
+        },
+        "Datum": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 5
+        },
+        "UNIPPS2Excel_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 3,
+            "n_vars": 0,
+            "n_methods": 16
+        }
+    },
+    "KE_Tools": {
+        "Konstruktoren": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 7
+        },
+        "XML_Toolbox": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 5
+        },
+        "XL_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 6
+        },
+        "QM2XL_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 5
+        },
+        "Pos_unterpos_records": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 4,
+            "n_methods": 4
+        },
+        "record": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 6
+        },
+        "QM_XML_Doc": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 8,
+            "n_methods": 7
+        },
+        "DB_Reader": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 14
+        },
+        "Kalenderwoche": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 5
+        },
+        "Datum": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 5
+        },
+        "UNIPPS2Excel_Tools": {
+            "vbtype": "vbmodule",
+            "n_const": 3,
+            "n_vars": 0,
+            "n_methods": 15
+        }
+    },
+    "Montage_Makros": {
+        "Globals": {
+            "vbtype": "vbmodule",
+            "n_const": 9,
+            "n_vars": 8,
+            "n_methods": 0
+        },
+        "Auftragsbestand": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 13
+        },
+        "Sort_u_Format": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 6
+        },
+        "Menues": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 4
+        },
+        "Spielwiese": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        }
+    },
+    "Pr\u00e4ferenzkalkulation Makros Win10": {
+        "DieseArbeitsmappe": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 0
+        },
+        "Globals": {
+            "vbtype": "vbmodule",
+            "n_const": 11,
+            "n_vars": 12,
+            "n_methods": 2
+        },
+        "main": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 8
+        },
+        "nach_Excel": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 10
+        },
+        "Bestellung": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 17,
+            "n_methods": 5
+        },
+        "Kundenauftrag": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 5,
+            "n_methods": 5
+        },
+        "SQL_Executor": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 10
+        },
+        "Kundenauftrags_Position": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 13,
+            "n_methods": 3
+        },
+        "STUELI_Position": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 22,
+            "n_methods": 7
+        },
+        "Teiledaten": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 20,
+            "n_methods": 1
+        },
+        "FA": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 10,
+            "n_methods": 3
+        },
+        "Teil_in_STU": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 7,
+            "n_methods": 2
+        },
+        "FA_Pos": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 14,
+            "n_methods": 3
+        },
+        "Suche_Kinder": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 3
+        },
+        "STU_Baum": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 5
+        },
+        "Tests": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 2,
+            "n_methods": 12
+        },
+        "Logger_cls": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 3,
+            "n_methods": 5
+        },
+        "csv_export": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 1,
+            "n_methods": 4
+        },
+        "xxxweg": {
+            "vbtype": "vbmodule",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        }
+    },
+    "Testmappe": {
+        "Tabelle1": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "Tabelle99": {
+            "vbtype": "vb_office_obj",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 1
+        },
+        "main": {
+            "vbtype": "vbmodule",
+            "n_const": 2,
+            "n_vars": 2,
+            "n_methods": 4
+        },
+        "TestKlasse": {
+            "vbtype": "vbclass",
+            "n_const": 0,
+            "n_vars": 3,
+            "n_methods": 1
+        },
+        "UserForm1": {
+            "vbtype": "vbform",
+            "n_const": 0,
+            "n_vars": 0,
+            "n_methods": 2
+        }
+    }
+}

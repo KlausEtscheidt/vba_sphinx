@@ -1,0 +1,36 @@
+# toml-configuration file for xl_codereader
+# for details of toml-syntax see https://toml.io/en/
+
+# output directory for exported Excel-VBA-files
+# the files will be named like the Excel-File but with '*.txt' extension
+# the directory must exist
+# use single backslashes for windows pathes
+# pathes starting with a dot like '.\VBA2Parse' are relativ to the dir current working dir
+
+outdir = '.\data\VBA2Parse'
+
+# list of Excel-files, whose vba-software should be exported
+# 
+# [[filelist]] defines an toml-"array of tables"
+# You can have multiple [[filelist]]-statements in your xl_codereader.toml
+# Each one has to be followed by one >>path = "path\to\my\directory\with\excelfiles"<< statement
+# this has to follow the same rules as >>outdir<< above
+# After the path-statement there must be one >>files = [list, of, files]<< statement,
+# which defines a list of files inside >>path<<
+# * as wildcard is allowed
+[[filelist]]
+path = 'V:\Tools\Excel Makros'
+#path = 'C:\Users\Klaus\Documents\_m\Excel-Makros'
+files = [
+    #'Ersatz_Auftragsverfolgung_Makros.xlam',
+    #'Ersatz_Auftragsverfolgung.xlsm',
+    #'E*.xl*',
+    #'*.xl*',
+]
+
+[[filelist]]
+path = '..'
+#path = 'C:\Users\Klaus\Documents\_m\Excel-Makros'
+files = [
+    'Testmappe.xl*',
+]

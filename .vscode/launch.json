@@ -1,0 +1,30 @@
+{
+    // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
+    // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
+    // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "PowerShell Launch Script",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "enter path or command to execute e.g.: ${workspaceFolder}/src/foo.ps1 or Invoke-Pester",
+            "cwd": "${cwd}"
+        },
+        {
+            "name": "Python-Debugger: Aktuelle Datei",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Parser",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}

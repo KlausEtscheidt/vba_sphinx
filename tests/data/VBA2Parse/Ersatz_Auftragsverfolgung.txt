@@ -1,0 +1,30 @@
+================================================================================
+vb_office_obj: Tabelle2
+================================================================================
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    If Target.Column = 1 And Target.Value <> "" Then
+        DetailAusgabeNachExcel Target.Value 'Aus Ersatz_Auftragsverfolgung_Makros.xlam
+        target_sheet_KA_Detail.Activate
+        target_sheet_KA_Detail.Range("A1").Activate
+    End If
+End Sub
+
+
+================================================================================
+vbmodule: Modul1
+================================================================================
+Sub Formular_Anzeigen()
+    'Aus Ersatz_Auftragsverfolgung_Makros.xlam
+    mainFormShow
+End Sub
+
+
+================================================================================
+vb_office_obj: Tabelle5
+================================================================================
+Private Sub Worksheet_Activate()
+    WochenAusgabeNachExcel
+End Sub
+
+
+<EndofFile>

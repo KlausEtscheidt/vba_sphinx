@@ -1,0 +1,47 @@
+================================================================================
+vb_office_obj: DieseArbeitsmappe
+================================================================================
+'Menues auf Originalzustand
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    On Error Resume Next
+    Application.CommandBars.ActiveMenuBar.Reset
+    On Error GoTo 0
+End Sub
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+    'MsgBox "Wechsle auf Menu-Blatt"
+    set_globals
+    UI_sheet.Activate
+End Sub
+'Menues auf erweitern
+Private Sub Workbook_Open()
+    On Error Resume Next
+    Workbook_Open_handler
+    On Error GoTo 0
+End Sub
+
+
+================================================================================
+vb_office_obj: Tabelle4
+================================================================================
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+End Sub
+
+
+================================================================================
+vbmodule: UI_Buttons
+================================================================================
+Sub Drucken()
+    main_Print_single
+End Sub
+Sub UNIPPS_einlesen()
+    main_Update_Auftragsbestand
+End Sub
+Sub format_erneuern()
+    main_Update_format
+End Sub
+Sub Pumpenauftrag()
+    main_Pumpenauftrag_lesen_und_drucken
+End Sub
+
+
+<EndofFile>
