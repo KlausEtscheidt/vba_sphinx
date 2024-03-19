@@ -22,27 +22,28 @@
 
     - win32com
 
-    if error win32com.gen_py has no attribute 'CLSIDToPackageMap' occurs:
+    if error win32com.gen_py has no attribute 'mcsIDToPackageMap' occurs:
              clear contents of c:/users/<username>/Appdata/Local/Temp/gen_py
 '''
 
 import os
 import logging
-import sys
+# import sys
+from abc import ABCMeta, abstractmethod
 
 import win32com.client as win32
 import pywintypes
 
-# Basis-Verzeichnis
-my_file = os.path.realpath(__file__) # Welcher File wird gerade durchlaufen
-my_dir = os.path.dirname(my_file)
-parent_dir = os.path.join(my_dir, '..')
-sys.path.insert(0, parent_dir)
-
-dontclose = True
-
 from vbasphinx.vba_utils.config_reader_toml import ConfigReader
 from vbasphinx.vba_utils.vba_logging import setup_logger
+
+# Basis-Verzeichnis
+# my_file = os.path.realpath(__file__) # Welcher File wird gerade durchlaufen
+# my_dir = os.path.dirname(my_file)
+# parent_dir = os.path.join(my_dir, '..')
+# sys.path.insert(0, parent_dir)
+
+DONTCLOSE = False
 
 log = logging.getLogger()
 
@@ -52,139 +53,123 @@ log = logging.getLogger()
 # text for output
 DIVIDER = '='*80
 
-class XlReaderException(Exception):
+class VBReaderException(Exception):
     '''class for exceptions'''
 
-class XLReader:
-    '''Reading Excel-Files and exporting vba-code'''
-
-    xl_app = None
-    workbook = None
+class VBAReader(ABCMeta):
+    '''Reading Office-Files and exporting vba-code'''
+    # __metaclass__ = abc.ABCMeta
+    app = None
+    appname = ''
+    act_file = None
     files2process = []
-    xl_outdir = ''
+    vba_outdir = ''
 
     @classmethod
-    def run(cls):
-        '''Load Excel-files and export software'''
+    def run(mcs):
+        '''Load Office-files and export software'''
 
         #setup logging
-        setup_logger('./xl_codereader.log')
+        setup_logger('./vba_codereader.log')
 
         # read what to do
-        cfg = ConfigReader('xl_codereader.toml')
-        cls.xl_outdir = cfg.getdir('outdir')
+        cfg = ConfigReader('vba_codereader.toml')
+        mcs.vba_outdir = cfg.getdir('outdir')
         allfiles = cfg.getfiles('filelist')
         # exclude backupfiles
         for file in allfiles:
             if not '~' in file:
-                cls.files2process.append(file)
+                mcs.files2process.append(file)
 
-        cls.__start_excel()
+        mcs.__start_app()
 
-        for i, fpath in enumerate(cls.files2process):
+        for i, fpath in enumerate(mcs.files2process):
             log.info ('\n%s', DIVIDER)
-            log.info ('file %d of %d', i+1, len(cls.files2process))
+            log.info ('file %d of %d', i+1, len(mcs.files2process))
             log.info ('try to open%s', fpath)
-            cls.__handle_xl_file(fpath)
+            mcs.__handle_file(fpath)
 
-        if not dontclose:
-            cls.xl_app.Application.Quit()
-            log.info ('Stopped Excel\n')
+        if not DONTCLOSE:
+            mcs.app.Application.Quit()
+            log.info ('Stopped %s\n', mcs.appname)
 
     @classmethod
-    def __start_excel(cls):
-        '''starts Excel
+    def __start_app(mcs):
+        '''starts Office-App
 
         Raises:
-            XlReaderException: raised if Excel is already running
-            XlReaderException: raised if Excel can't be started
+            VBReaderException: raised if App is already running
+            VBReaderException: raised if App can't be started
         '''
-        # start Excel
+        # start app
         try:
             # Check, if it's already running
-            cls.xl_app = win32.GetActiveObject("Excel.Application")
+            # mcs.xl_app = win32.GetActiveObject(appname + '.Application')
+            mcs.app = win32.GetActiveObject(mcs.appname + '.Application')
             # raise XlReaderException('Excel is running. Please close all instances.')
         except (AttributeError, pywintypes.com_error) as err: # pylint: disable=unused-variable
 
             # Ok, Excel is not running, so start it
             try:
-                # cls.xl_app = win32.gencache.EnsureDispatch('Excel.Application')
-                cls.xl_app = win32.Dispatch('Excel.Application')
+                mcs.app = win32.gencache.EnsureDispatch(mcs.appname + '.Application')
+                # mcs.xl_app = win32.Dispatch('Excel.Application')
+                # mcs.xl_app = win32.Dispatch('Access.Application')
             except pywintypes.com_error as err2:
-                raise XlReaderException('Could not start Excel.\n{err2}') from err2
+                raise VBReaderException('Could not start {mcs.appname}.\n{err2}') from err2
 
-        cls.xl_app.Visible = True
-        log.info ('Excel is running\n')
+        mcs.app.Visible = True
+        log.info ('%s is running\n', mcs.appname)
 
     @classmethod
-    def __handle_xl_file(cls, xl_path):
-        '''exports all software components of the xl_path workbook
+    def __handle_file(mcs, path):
+        '''exports all software components of the path db
 
         Args:
-            xl_path (str): path to excel-workbook
+            xl_path (str): path to access db
         '''
 
         # try to open workbook (raises error if we fail)
-        cls.__open_xl_file(xl_path)
+        mcs.open_file(path)
         log.info ('opened\n')
 
         # get name of output-file
-        _, name_ext = os.path.split(xl_path)
+        _, name_ext = os.path.split(path)
         name, _ = os.path.splitext(name_ext)
-        outpath = os.path.join(cls.xl_outdir, name + '.txt')
+        outpath = os.path.join(mcs.vba_outdir, name + '.txt')
 
         with open(outpath, 'w', encoding='utf-8') as outf:
-            for comp in cls.workbook.VBProject.VBComponents:
-                cls.__handle_vba_component(outf, comp)
+            for comp in mcs.app.VBE.ActiveVBProject.VBComponents:
+                mcs.__handle_vba_component(outf, comp)
             outf.write('<EndofFile>')
         log.info ('\nWritten %s', outpath)
         opened_by_someone = False
 
-        if not dontclose: #dont close for tests
+        if not DONTCLOSE: #dont close for tests
             try:
-                # If Workbook is opened by some else, we can't close it
-                cls.workbook.Close()
+                # If abstractmethod is opened by some else, we can't close it
+                mcs.act_file.Close()
             except pywintypes.com_error as err:
                 if err.hresult == -2147352567:
                     if err.excepinfo[5] == -2146827284:
                         #opened by someone else
                         opened_by_someone = True
                 if not opened_by_someone:
-                    cls.xl_app.Application.Quit()
+                    mcs.app.Application.Quit()
                     raise err
 
         if opened_by_someone:
             log.info('\n %s still opened by someone.', name_ext)
         else:
-            log.info ('\nClosed %s', xl_path)
+            log.info ('\nClosed %s', path)
         log.info (DIVIDER)
 
+    @classmethod
+    @abstractmethod
+    def open_file(mcs, _path):
+        '''opens office file'''
 
     @classmethod
-    def __open_xl_file(cls, xl_path):
-        '''opens xl-workbook
-
-        Args:
-            xl_path (str): path to Excel file
-
-        Raises:
-            XlReaderException: raised, if file can't be openend
-        '''
-        _, name_ext = os.path.split(xl_path)
-        try:
-            # already opened ?
-            cls.workbook = cls.xl_app.Workbooks[name_ext]
-        except pywintypes.com_error as err:  # pylint: disable=unused-variable
-
-            try:
-                # open
-                cls.workbook = cls.xl_app.Workbooks.Open(xl_path)
-            except pywintypes.com_error as err2:
-                cls.xl_app.Application.Quit()
-                raise XlReaderException(f'Could not open {name_ext}') from err2
-
-    @classmethod
-    def __handle_vba_component(cls, outf, comp):
+    def __handle_vba_component(mcs, outf, comp):
         '''export sourcecode of one vba.component (form, module, worksheet, etc)
 
         Args:
@@ -192,7 +177,7 @@ class XLReader:
             comp (com-object): VBComponent
 
         Raises:
-            XlReaderException: Type of VBComponent not implemented
+            VBReaderException: Type of VBComponent not implemented
         '''
 
         log.info('found: %s', comp.name)
@@ -241,5 +226,63 @@ class XLReader:
                     i += 1
                 outf.write('\n\n')
 
+class AccessReader(VBAReader):
+    '''Reading Access-Files and exporting vba-code'''
+
+    appname = 'Access'
+
+    @classmethod
+    def open_file(mcs, path):
+        '''opens Access database
+
+        Args:
+            path (str): path to Access file
+
+        Raises:
+            VBReaderException: raised, if file can't be openend
+        '''
+        _, name_ext = os.path.split(path)
+        try:
+            mcs.app.OpenCurrentDatabase(path)
+            mcs.act_file = mcs.app.CurrentDb()
+        except pywintypes.com_error as err:  # pylint: disable=unused-variable
+            if err.hresult == -2147352567:
+                if err.excepinfo[5] == -2146820421:
+                    # was already open
+                    mcs.act_file = mcs.app.CurrentDb()
+            else:
+                raise VBReaderException(f'Could not open {name_ext}') from err
+
+        if not mcs.act_file:
+            mcs.app.Application.Quit()
+            raise VBReaderException(f'{mcs.appname} could not open {name_ext}')
+
+class ExcelReader(VBAReader):
+    '''Reading Excel-Files and exporting vba-code'''
+
+    appname = 'Excel'
+
+    @classmethod
+    def open_file(mcs, path):
+        '''opens Excel database
+        
+        Args:
+            path (str): path to Excel file
+
+        Raises:
+            VBReaderException: raised, if file can't be openend
+        '''
+        _, name_ext = os.path.split(path)
+        try:
+            # already opened ?
+            mcs.act_file = mcs.app.Workbooks[name_ext]
+        except pywintypes.com_error as err:  # pylint: disable=unused-variable
+            try:
+                # open
+                mcs.act_file = mcs.app.Workbooks.Open(path)
+            except pywintypes.com_error as err2:
+                mcs.app.Application.Quit()
+                raise VBReaderException(f'{mcs.appname} could not open {name_ext}') from err2
+
 if __name__ == '__main__':
-    XLReader.run()
+    pass

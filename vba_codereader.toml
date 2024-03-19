@@ -7,7 +7,7 @@
 # use single backslashes for windows pathes
 # pathes starting with a dot like '.\VBA2Parse' are relativ to the dir current working dir
 
-outdir = '.\data\VBA2Parse'
+outdir = '.\tests\data\VBA2Parse'
 
 # list of Excel-files, whose vba-software should be exported
 # 
@@ -29,8 +29,14 @@ files = [
 ]
 
 [[filelist]]
-path = '..'
+path = '.\tests\data'
 #path = 'C:\Users\Klaus\Documents\_m\Excel-Makros'
 files = [
     'Testmappe.xl*',
+]
+
+[[filelist]]
+path = '..'
+files = [
+    #'DatenbankDoku.accdb',
 ]

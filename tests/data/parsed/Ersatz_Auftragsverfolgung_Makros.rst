@@ -4,882 +4,868 @@ Ersatz_Auftragsverfolgung_Makros
 .. vba:module:: Ersatz_Auftragsverfolgung_Makros
 
 
-   .. vba:vb_office_obj:: DieseArbeitsmappe
+   .. vba:vbmodule:: Konstruktoren
 
 
-      .. vba:vbsub:: Workbook_Open()
-         :scope: Private
-
-
-
-
-   .. vba:vbmodule:: ExcelAusgabe
-
-      Modul zum Lesen von Ersatzaufträgen incl der Positionen und der Lagersituation
-
-      .. vba:vbsub:: mainFormShow()
-         :scope: Public
-
-         Modul zum Lesen von Ersatzaufträgen incl der Positionen und der Lagersituation
-
-
-
-      .. vba:vbsub:: lies_KA_aus_Access()
-         :scope: Public
-
-         Lies Daten aus Access
-
-
-
-      .. vba:vbsub:: WochenAusgabeNachExcel()
-
-         Gibt die Wochenübersicht (Anzahl,wert und Anzahl Pos) der Aufträge in Excel aus
-
-
-
-      .. vba:vbsub:: ListenAusgabeNachExcel()
-
-         Gibt für die gewählten Zeitbereiche und den gewählten Umfang
-         die Daten der Kundeaufträge in Excel aus
-
-
-
-      .. vba:vbsub:: DetailAusgabeNachExcel(ka_id$)
-
-         Gibt die Positionen eunes Auftrags in Excel aus
-
-         :arg $ ka_id:
-
-
-      .. vba:vbsub:: WochenAusgabeVorbereiten(Zeile As Long)
-
-         Vorbereiten der Ausgabe nach Excel
-
-         :arg Long Zeile:
-
-
-      .. vba:vbsub:: ListenAusgabeVorbereiten(Zeile As Long)
-
-         Vorbereiten der KA-Listen Ausgabe nach Excel
-
-         :arg Long Zeile:
-
-
-      .. vba:vbsub:: DetailAusgabeVorbereiten(Zeile As Long)
-
-         Vorbereiten der KA-Detail-Ausgabe nach Excel
-
-         :arg Long Zeile:
-
-
-   .. vba:vbclass:: KundenAuftrag
-
-      Id des KA
-
-      .. vba:vbvar:: AuftragsNr As Long
-         :scope: Public
-
-         Id des KA
-
-      .. vba:vbvar:: Termin$
-         :scope: Public
-
-         Liefertermin als Datum (immer Mittwoch der KW)
-
-      .. vba:vbvar:: Termin_KW$
-         :scope: Public
-
-
-      .. vba:vbvar:: KundenName$
-         :scope: Public
-
-
-      .. vba:vbvar:: Wertindex As Double
-         :scope: Public
-
-         UNIPPS-NettoGesamtpreis des Auftrags geteilt durch 200.000 €
-
-      .. vba:vbvar:: AnzPos%
-         :scope: Public
-
-         Anzahl der Positionen des Auftrags
-
-      .. vba:vbvar:: Zahlungsbed%
-         :scope: Public
-
-         Zahlungsbedingungen (Detail s. UNIPPS)
-
-      .. vba:vbvar:: AllesAufLager As Boolean
-         :scope: Public
-
-         Flag=True wenn alle Positionen ausreichend auf Lager
-
-      .. vba:vbvar:: AllesAufLagerDatum As Date
-         :scope: Public
-
-
-      .. vba:vbvar:: AllesAuf100erLager As Boolean
-         :scope: Public
-
-         Flag=True wenn alle Positionen aus 100'er Lagerorten stammen
-
-      .. vba:vbvar:: Status%
-         :scope: Public
-
-
-      .. vba:vbvar:: StatusErsatz$
-         :scope: Public
-
-
-      .. vba:vbvar:: StatusErsatzDatum As Date
-         :scope: Public
-
-
-      .. vba:vbvar:: FertigDatum As Date
-         :scope: Public
-
-
-      .. vba:vbvar:: KaPositionen As Collection
-         :scope: Public
-
-         Liste der Positionen des KA
-
-      .. vba:vbvar:: locRs As ADODB.Recordset
-         :scope: Private
-
-
-      .. vba:vbsub:: hole_positionen()
-         :scope: Public
-
-         Alle Positionen eines KA lesen
-
-
-
-      .. vba:vbsub:: ExcelOut(Target As Range, ByRef Zeile As Long)
-         :scope: Public
-
-         Kundenauftrag nach Excel (mit oder ohne Positionen)
-
-         :arg Range Target:
-         :arg Long Zeile:
-
-
-      .. vba:vbfunc:: isKaStatusOK() As Boolean
+      .. vba:vbfunc:: New_DB_Reader() As DB_Reader
          :scope: Public
 
 
          :returns:
-         :returntype: Boolean
+         :returntype: DB_Reader
 
 
-      .. vba:vbfunc:: isKaInDateRange() As Boolean
+      .. vba:vbfunc:: New_KW_from_date(myday As Date) As Kalenderwoche
+         :scope: Public
+
+
+         :arg Date myday:
+         :returns:
+         :returntype: Kalenderwoche
+
+
+      .. vba:vbfunc:: New_KW_from_text(mytext$) As Kalenderwoche
+         :scope: Public
+
+
+         :arg $ mytext:
+         :returns:
+         :returntype: Kalenderwoche
+
+
+      .. vba:vbfunc:: New_XML_Toolbox() As XML_Toolbox
          :scope: Public
 
 
          :returns:
-         :returntype: Boolean
+         :returntype: XML_Toolbox
 
 
-      .. vba:vbsub:: Init(rs As ADODB.Recordset)
+      .. vba:vbfunc:: New_Projekt_record() As Projekt_record
          :scope: Public
 
 
-         :arg ADODB.Recordset rs:
+         :returns:
+         :returntype: Projekt_record
 
 
-   .. vba:vbclass:: Auftragsposition
-
-      Klasse zum Speichern einer Auftragsposition
-
-      .. vba:vbvar:: loc_hatFehlbestand As Boolean
-         :scope: Private
-
-         Klasse zum Speichern einer Auftragsposition
-
-      .. vba:vbvar:: Auftragsnummer As Long
+      .. vba:vbfunc:: New_Pos_unterpos_records(myQM_XML_Doc As QM_XML_Doc, search$) As Pos_unterpos_records
          :scope: Public
 
 
-      .. vba:vbvar:: PosNr$
+         :arg QM_XML_Doc myQM_XML_Doc:
+         :arg $ search:
+         :returns:
+         :returntype: Pos_unterpos_records
+
+
+      .. vba:vbfunc:: New_QM_XML_Doc() As QM_XML_Doc
          :scope: Public
 
 
-      .. vba:vbvar:: t_tg_nr$
-         :scope: Public
+         :returns:
+         :returntype: QM_XML_Doc
 
 
-      .. vba:vbvar:: Lager_frei As Double
-         :scope: Public
+   .. vba:vbclass:: XML_Toolbox
 
 
-      .. vba:vbvar:: Lager_reserviert As Double
-         :scope: Public
-
-
-      .. vba:vbvar:: VorzugsLagerOrt$
-         :scope: Public
-
-
-      .. vba:vbvar:: Bedarf_auftrag As Double
-         :scope: Public
-
-
-      .. vba:vbvar:: Bedarf_pos As Double
-         :scope: Public
-
-
-      .. vba:vbvar:: Bedarf_dispo As Double
-         :scope: Public
-
-
-      .. vba:vbvar:: hatFehlbestand As Boolean
-         :scope: Public
-
-
-      .. vba:vbvar:: Fehlbestands_art%
-         :scope: Public
-
-
-      .. vba:vbvar:: lagernd_seit As Date
-         :scope: Public
-
-
-      .. vba:vbvar:: hatUnterpos As Boolean
-         :scope: Public
-
-
-      .. vba:vbsub:: Init(rs As Recordset)
-         :scope: Public
-
-         Quasi-Konstruktor: Holt alle Daten der Pos aus Recordset
-         Muss als erstes nach NEW aufgerufen werden
-
-         :arg Recordset rs:
-
-
-      .. vba:vbsub:: ExcelOut(Target As Range, ByRef Zeile As Long, startcol%)
-         :scope: Public
-
-         Ausgabe KA-Position in neue Zeile
-
-         :arg Range Target:
-         :arg Long Zeile:
-         :arg % startcol:
-
-
-   .. vba:vbform:: mainForm
-
-
-      .. vba:vbvar:: Einzel_KW_Woche%
-         :scope: Public
-
-
-      .. vba:vbvar:: Einzel_KW_Jahr%
-         :scope: Public
-
-
-      .. vba:vbsub:: AusgabeBtn_Click()
+      .. vba:vbvar:: cls_xmlDoc As DOMDocument60
          :scope: Private
 
 
-
-
-      .. vba:vbsub:: EscBtn_Click()
+      .. vba:vbvar:: cls_xmlRoot As IXMLDOMElement
          :scope: Private
 
 
+      .. vba:vbprop:: xmlRoot As IXMLDOMElement
+         :scope: Public
 
 
-      .. vba:vbsub:: UNIPPSImportBtn_Click()
-         :scope: Private
+      .. vba:vbprop:: xmldoc As DOMDocument60
+         :scope: Public
+
+
+      .. vba:vbsub:: open_Doc(ByVal XmlDateiMitPfad As String)
+         :scope: Public
+
+
+         :arg String XmlDateiMitPfad:
+
+
+      .. vba:vbsub:: create_Doc()
+         :scope: Public
 
 
 
 
-      .. vba:vbsub:: UserForm_Activate()
-         :scope: Private
+      .. vba:vbsub:: save_Doc(file_name$)
+         :scope: Public
 
 
+         :arg $ file_name:
 
 
-      .. vba:vbfunc:: Check_KW_Eingabe() As Boolean
-         :scope: Private
+      .. vba:vbfunc:: get_attribute_value(base_node As IXMLDOMElement, att_name$)
+         :scope: Public
 
 
+         :arg IXMLDOMElement base_node:
+         :arg $ att_name:
+
+
+      .. vba:vbfunc:: search_for_node(base_node As IXMLDOMElement, xpathsearch_str$) As IXMLDOMElement
+         :scope: Public
+
+
+         :arg IXMLDOMElement base_node:
+         :arg $ xpathsearch_str:
+         :returns:
+         :returntype: IXMLDOMElement
+
+
+      .. vba:vbfunc:: search_for_nodes(base_node As IXMLDOMElement, xpathsearch_str$) As IXMLDOMNodeList
+         :scope: Public
+
+
+         :arg IXMLDOMElement base_node:
+         :arg $ xpathsearch_str:
+         :returns:
+         :returntype: IXMLDOMNodeList
+
+
+   .. vba:vbmodule:: XL_Tools
+
+
+      .. vba:vbsub:: Abbruchmeldung(msg$)
+
+
+         :arg $ msg:
+
+
+      .. vba:vbfunc:: Oeffne_Excel(name$, Pfad$) As Workbook
+
+
+         :arg $ name:
+         :arg $ Pfad:
+         :returns:
+         :returntype: Workbook
+
+
+      .. vba:vbfunc:: Waehle_Datei(Optional msg$ = "", Optional path$ = "", Optional filter$ = "") As Variant
+
+
+         :arg $ msg:
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbsub:: write_header(mysheet As Worksheet, start_cell, headertxt)
+
+
+         :arg Worksheet mysheet:
+         :arg  start_cell:
+         :arg  headertxt:
+
+
+      .. vba:vbfunc:: hole_zeilen(myrange As Range) As Long
+
+
+         :arg Range myrange:
+         :returns:
+         :returntype: Long
+
+
+      .. vba:vbfunc:: FileExists(ByVal File As String) As Boolean
+
+
+         :arg String File:
          :returns:
          :returntype: Boolean
 
 
-      .. vba:vbfunc:: xxxCheck_KW_Eingabe() As Boolean
+   .. vba:vbmodule:: QM2XL_Tools
+
+
+      .. vba:vbvar:: cls_record As record
          :scope: Private
 
 
+      .. vba:vbvar:: cls_parent As QM_XML_Doc
+         :scope: Private
+
+
+      .. vba:vbsub:: fill_from_XML_Doc(parent_QM_XML_Doc As QM_XML_Doc)
+         :scope: Public
+
+
+         :arg QM_XML_Doc parent_QM_XML_Doc:
+
+
+      .. vba:vbsub:: testprint2sheet(Optional myrange As Range)
+         :scope: Public
+
+
+         :arg Range myrange:
+
+
+      .. vba:vbfunc:: value(key$) As String
+         :scope: Public
+
+
+         :arg $ key:
          :returns:
-         :returntype: Boolean
+         :returntype: String
 
 
-   .. vba:vbmodule:: Globals
-
-      Hier werden globale Variable definiert und mit set_globals1 bzw set_globals2 gesetzt
-      Pfad zur Excel-Liste mit Ersatzstatus
-
-      .. vba:vbconst:: EStatus_Pfad = "V:\"
-         :scope: Global
-
-         Hier werden globale Variable definiert und mit set_globals1 bzw set_globals2 gesetzt
-         Pfad zur Excel-Liste mit Ersatzstatus
-
-      .. vba:vbconst:: EStatus_Name = "Ersatzkommissionen.xls"
-         :scope: Global
-
-
-      .. vba:vbconst:: DB_Pfad = "V:\Tools\Excel Makros\"
-         :scope: Global
-
-         Pfad zur access-Datenbank
-
-      .. vba:vbconst:: DB_Name = "Ersatz_mit_Bestand.accdb"
-         :scope: Global
-
-
-      .. vba:vbconst:: target_sheet_name_Wochen = "Wochen"
-         :scope: Global
-
-
-      .. vba:vbconst:: target_sheet_name_KA_Liste = "KA_Liste"
-         :scope: Global
-
-
-      .. vba:vbconst:: target_sheet_name_KA_Detail = "KA_Detail"
-         :scope: Global
-
-
-      .. vba:vbvar:: accApp As Object
-         :scope: Global
-
-         Access-Objekt um direkt Access-Befehle zu nutzen
-
-      .. vba:vbvar:: DbConn As ADODB.Connection
-         :scope: Global
-
-         ODBC Datenbankverbindung zu Access
-
-      .. vba:vbvar:: force_access_read As Boolean
-         :scope: Global
-
-         Erzwingen, das jedes mal neu eingelesen wird (nur fuer Tests True)
-
-      .. vba:vbvar:: target_sheet_Wochen As Worksheet
-         :scope: Global
-
-
-      .. vba:vbvar:: target_sheet_KA_Liste As Worksheet
-         :scope: Global
-
-
-      .. vba:vbvar:: target_sheet_KA_Detail As Worksheet
-         :scope: Global
-
-
-      .. vba:vbvar:: Target As Range
-         :scope: Global
-
-
-      .. vba:vbvar:: Mittwoch_dieser_KW As Date
-         :scope: Global
-
-
-      .. vba:vbvar:: KaListenGelesen As Boolean
-         :scope: Global
-
-
-      .. vba:vbsub:: set_globals()
-
-         Für Modul KA_mit_Pos
-
-
-
-   .. vba:vbmodule:: Tests
-
-
-      .. vba:vbvar:: KAListe As KA_Liste
-         :scope: Global
-
-
-      .. vba:vbsub:: Test1()
-
-
-
-
-      .. vba:vbsub:: force_read()
-
-
-
-
-      .. vba:vbsub:: unforce_read()
-
-
-
-
-      .. vba:vbsub:: Wochenstatus()
+      .. vba:vbfunc:: items() As Variant
          :scope: Public
 
 
+         :returns:
+         :returntype: Variant
 
 
-   .. vba:vbclass:: KA_Liste
-
-
-      .. vba:vbvar:: Liste As Collection
+      .. vba:vbfunc:: keys() As Variant
          :scope: Public
 
 
-      .. vba:vbsub:: Init()
+         :returns:
+         :returntype: Variant
+
+
+   .. vba:vbclass:: Pos_unterpos_records
+
+
+      .. vba:vbvar:: cls_UPos_record As record
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_Pos_record As record
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_pos_upos_nodes As IXMLDOMNodeList
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_parent As QM_XML_Doc
+         :scope: Private
+
+
+      .. vba:vbprop:: pos_record As record
          :scope: Public
 
 
-
-
-      .. vba:vbsub:: NachExcel(ByRef Zeile As Long)
+      .. vba:vbprop:: Upos_record As record
          :scope: Public
 
 
-         :arg Long Zeile:
-
-
-      .. vba:vbsub:: Wochenstatus(MittwochKW As Date)
+      .. vba:vbprop:: node_count As Integer
          :scope: Public
 
 
-         :arg Date MittwochKW:
+      .. vba:vbsub:: init(myQM_XML_Doc As QM_XML_Doc, search$)
 
 
-   .. vba:vbmodule:: Common
+         :arg QM_XML_Doc myQM_XML_Doc:
+         :arg $ search:
 
-      ODBC-Verbindung zu Access
 
-      .. vba:vbsub:: connect_Access()
+      .. vba:vbsub:: make_record_current(id%)
          :scope: Public
 
-         ODBC-Verbindung zu Access
+
+         :arg % id:
 
 
-
-      .. vba:vbsub:: disconnect_Access()
+      .. vba:vbsub:: testprint_cur_record2sheet(Optional myrange As Range)
          :scope: Public
 
-         ODBC-Verbindung zu Access abbauen
+
+         :arg Range myrange:
 
 
-
-      .. vba:vbsub:: Open_Access()
+      .. vba:vbfunc:: cur_rec_field(typ$, key$)
          :scope: Public
 
-         Access als Anwendung oeffnen
+
+         :arg $ typ:
+         :arg $ key:
+
+
+   .. vba:vbclass:: record
+
+
+      .. vba:vbvar:: cls_record As Dictionary
+         :scope: Private
+
+
+      .. vba:vbprop:: record As record
+         :scope: Public
+
+
+      .. vba:vbsub:: fill_from_XML_Doc(myXMLnode As IXMLDOMElement)
+         :scope: Public
+
+
+         :arg IXMLDOMElement myXMLnode:
+
+
+      .. vba:vbfunc:: count() As Integer
+         :scope: Public
+
+
+         :returns:
+         :returntype: Integer
+
+
+      .. vba:vbfunc:: items() As Variant
+         :scope: Public
+
+
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbfunc:: keys() As Variant
+         :scope: Public
+
+
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbfunc:: value(key$) As String
+         :scope: Public
+
+
+         :arg $ key:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbsub:: testprint2sheet(headline$, Optional myrange As Range)
+         :scope: Public
+
+
+         :arg $ headline:
+         :arg Range myrange:
+
+
+   .. vba:vbclass:: QM_XML_Doc
+
+
+      .. vba:vbvar:: cls_xmlDoc As DOMDocument60
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_XML_Toolbox As XML_Toolbox
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_Projekt_record As Projekt_record
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_pump_records As Pos_unterpos_records
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_dok_date As Date
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_dok_typ$
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_dok_rev$
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_dok_proj_nr$
+         :scope: Private
+
+
+      .. vba:vbprop:: XML_Toolbox As Variant
+         :scope: Public
+
+
+      .. vba:vbprop:: xmlRoot As IXMLDOMElement
+         :scope: Public
+
+
+      .. vba:vbprop:: xmldoc As DOMDocument60
+         :scope: Public
+
+
+      .. vba:vbprop:: Projekt_record As Projekt_record
+         :scope: Public
+
+
+      .. vba:vbprop:: pump_count As Integer
+         :scope: Public
+
+
+      .. vba:vbprop:: Pump_records As Pos_unterpos_records
+         :scope: Public
+
+
+      .. vba:vbprop:: dok_date As Date
+         :scope: Public
+
+
+      .. vba:vbprop:: dok_typ As String
+         :scope: Public
+
+
+      .. vba:vbprop:: dok_rev As String
+         :scope: Public
+
+
+      .. vba:vbprop:: dok_proj_nr As String
+         :scope: Public
+
+
+      .. vba:vbsub:: open_Single_Doc(Optional default_dir$ = "", Optional ByVal fileToOpen As String = "")
+         :scope: Public
+
+
+         :arg $ default_dir:
+
+
+      .. vba:vbfunc:: get_document_tag(tag_path$) As Variant
+         :scope: Private
+
+
+         :arg $ tag_path:
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbsub:: search_pumps()
+         :scope: Private
 
 
 
-      .. vba:vbfunc:: hole_recordset(sql$) As ADODB.Recordset
+
+      .. vba:vbsub:: keys2sheet(Optional myrange As Range)
+         :scope: Public
+
+
+         :arg Range myrange:
+
+
+      .. vba:vbsub:: testprint2sheet(Optional myrange As Range)
+         :scope: Public
+
+
+         :arg Range myrange:
+
+
+      .. vba:vbfunc:: cur_rec_field(typ$, key$)
+         :scope: Public
+
+
+         :arg $ typ:
+         :arg $ key:
+
+
+      .. vba:vbfunc:: keys(typ$) As Variant
+         :scope: Public
+
+
+         :arg $ typ:
+         :returns:
+         :returntype: Variant
+
+
+   .. vba:vbclass:: DB_Reader
+
+
+      .. vba:vbvar:: locAdoConnection As ADODB.Connection
+         :scope: Private
+
+
+      .. vba:vbvar:: locRecordset As ADODB.Recordset
+         :scope: Private
+
+
+      .. vba:vbprop:: rs As Recordset
+         :scope: Public
+
+
+      .. vba:vbprop:: Connection As ADODB.Connection
+         :scope: Public
+
+
+      .. vba:vbprop:: xl_recordset As Recordset
+         :scope: Public
+
+
+      .. vba:vbprop:: txt_recordset As Recordset
+         :scope: Public
+
+
+      .. vba:vbfunc:: hole_recordset(sql$) As Recordset
          :scope: Public
 
 
          :arg $ sql:
          :returns:
-         :returntype: ADODB.Recordset
+         :returntype: Recordset
 
 
-      .. vba:vbsub:: DropTable(tablename$)
-         :scope: Public
-
-         Entfernt tabelle aus access
-
-         :arg $ tablename:
-
-
-   .. vba:vbmodule:: Import_Unipps_Abfragen
-
-      Teile zu den Auftragspositionen lesen
-
-      .. vba:vbsub:: Teile_2Access()
-         :scope: Public
-
-         Teile zu den Auftragspositionen lesen
-
-
-
-      .. vba:vbsub:: Teile_Lagerbestand_2Access()
-         :scope: Public
-
-         Lagerbestand der Teile zu den Auftragspositionen lesen
-
-
-
-      .. vba:vbsub:: Teile_Lagerbestands_Summen_2Access()
-         :scope: Public
-
-         Lagerbestände der Teile nach t_tg_nr und auftr_nr summieren
-
-
-
-      .. vba:vbsub:: Apos_2Access()
-         :scope: Public
-
-         Auftragspositionen lesen
-
-
-
-      .. vba:vbsub:: Apos_Superpos_2Access()
-         :scope: Public
-
-         Auftragspositionen markieren, die Unterpositionen haben
-
-
-
-      .. vba:vbsub:: KA_2Access()
-         :scope: Public
-
-         Kundenauftraege einlesen; neue und neu fertiggemeldete markieren
-
-
-
-      .. vba:vbsub:: KA_AnzPos_2Access()
-         :scope: Public
-
-         Für Kundenauftraege Anzahl der Positionen bestimmen
-
-
-
-      .. vba:vbsub:: Dispobedarfe_2Access()
-         :scope: Public
-
-         Disponierte Bestaende der Teile zu den Auftragspositionen lesen
-
-
-
-      .. vba:vbsub:: Dispobestand_res_Lager_2Access()
-         :scope: Public
-
-         Für Teil-Auftrags-Kombination reservierte Lagerbestände lesen
-
-
-
-      .. vba:vbsub:: Dispobestand_Summe_2Access()
-         :scope: Public
-
-         Disponierte Bedarfe aufsummieren
-         Nur Positionen ohne reservierten Lagerbestand berücksichtigen
-
-
-
-      .. vba:vbsub:: Apos_Gesamtbedarfe_2Access()
-         :scope: Public
-
-         Gesamt-Bedarfe eines Auftrages an einem Teil in Tabelle Auftragspos
-         Wichtig fuer KA die ein Teil auf mehreren Positionen enthalten
-
-
-
-      .. vba:vbsub:: Apos_Dispo_Bedarfe_2Access()
-         :scope: Public
-
-         Disponierte Bedarfe ohne Reservierung in Tabelle Auftragspos
-
-
-
-      .. vba:vbsub:: Apos_res_Lagerbestand_2Access()
-         :scope: Public
-
-         reservierte Lagerbestaende zur Tabelle Auftragspos dazu
-
-
-
-      .. vba:vbsub:: Apos_freier_Lagerbestand_2Access()
-         :scope: Public
-
-         freie Lagerbestaende zur Tabelle Auftragspos dazu
-
-
-
-      .. vba:vbsub:: Apos_Lagerort_2Access()
-         :scope: Public
-
-         Lagerorte zu Auftragspositionen dazu
-
-
-
-      .. vba:vbsub:: Apos_FehlBedarfe_2Access()
-         :scope: Public
-
-         Fehlbedarfe Bedarfe in Tabelle Auftragspos
-         
-         Die Prüfung findet in mehreren Stufen statt.
-         Als Ergebnis wird jeweils das Flag "fehlbestand" gesetzt und die Art der Prüfung als "fehlbest_status" gesetzt.
-         "fehlbest_status"=0 (default) heißt ungeprüft
-         Alle Prüfungen werden nur für bisher ungeprüfte Positionen durchgeführt
-         => Sobald einmal das Flag "fehlbestand" gesetzt ist (True oder False), wird es nicht mehr neu gesetzt,
-         da zugleich "fehlbest_status" mit einem Wert > 0 besetzt wird.
-         Da die Prüfungen aufeinander aufbauen, ist die Reihenfolge wichtig
-         
-         Prüfung 1: Hat die Auftragsposition Unterpositionen ?
-         Ja: Es gibt keinen Fehlbestand, da dieser für die Unterpositionen geprüft wird
-         fehlbest_status=1 ; fehlbestand=False
-         
-         Prüfung 2.1: Gibt es für die Auftragsposition einen reservierten Bestand (Lager_res>0)
-         und ist der GRÖSSER als der Gesamtbedarf an diesem Teil für diesen Auftrag (Lager_res>=bedarf_auftrag)
-         Grund: Ein Teil kann auf mehreren Positionen eines Auftrags vorkommen.
-         Der reservierte Bestand "Lager_res" gilt immer für alle Positionen zusammen.
-         "bedarf_auftrag" ist daher die Summe der Bedarfs-Mengen eines Teils im Auftrag
-         Ja: Es gibt keinen Fehlbestand; der reservierte Lagerbestand ist größer als der Bedarf des Auftrags
-         fehlbest_status=2 ; fehlbestand=False
-         
-         Prüfung 2.2: Gibt es für die Auftragsposition einen reservierten Bestand (Lager_res>0)
-         und ist der KLEINER als der Gesamtbedarf an diesem Teil für diesen Auftrag (Lager_res<bedarf_auftrag)
-         Ja: Es gibt einen Fehlbestand; der reservierte Lagerbestand zu klein
-         fehlbest_status=91 ; fehlbestand=True
-         
-         Prüfung 3.1: Gibt es KEINEN freien Lagerbestand für die Auftragsposition (Lager_frei=0)
-         Grund: Die Positionen mit reserviertem Bestand wurden schon geprüft (s. oben)
-         Für diese Position gibt es keinen reservierten, es muss der freie Bestand reichen
-         Ja: es gibt KEINEN freien Lagerbestand
-         fehlbest_status=92 ; fehlbestand=True
-         
-         Prüfung 3.2: Gibt es freien Lagerbestand (Lager_frei=0)
-         und ist der GRÖSSER als der disponierte Bedarf für die Auftragsposition (Lager_frei>=bedarf_dispo)
-         Grund: der disponierte Bedarf "bedarf_dispo" enthält die Bedarfe aller Aufträge deren Termin
-         kleiner oder gleich dem Termin unseres "Prüf"-Auftrags ist,
-         jedoch ohne die Bedarfe, für die es reservierten Bestand gibt.
-         Reservierter Bestand fließt weder in "bedarf_dispo" noch in "Lager_frei" ein
-         Ja: Der freie Lagerbestand ist >= als der disponierte Bedarf => kein Fehlbestand
-         fehlbest_status=3 ; fehlbestand=False
-         
-         Prüfung 3.3: Gibt es freien Lagerbestand (Lager_frei=0)
-         und ist der KLEINER als der disponierte Bedarf für die Auftragsposition (Lager_frei<bedarf_dispo)
-         Grund: wie 3.2
-         Ja: Der freie Lagerbestand ist kleiner als der disponierte Bedarf =>  Fehlbestand
-         fehlbest_status=93 ; fehlbestand=True
-
-
-
-      .. vba:vbsub:: KA_FehlBedarfe_2Access()
-         :scope: Public
-
-         Flag fuer FehlBedarfe in Tabelle KA_Zusatzdaten setzen
-
-
-
-      .. vba:vbsub:: KA_Lager100_2Access()
-         :scope: Public
-
-         Check ob alle Teile des KA in Lagerbereich 100 liegen
-         Flag in Tabelle KA_Zusatzdaten setzen
-
-
-
-      .. vba:vbsub:: KA_Ersatzstatus_2Access()
-         :scope: Public
-
-         Ersatzstatus in Tabelle KA_Zusatzdaten
-
-
-
-   .. vba:vbmodule:: Historie
-
-      Berechnet durch neuen Import entstande Unterschiede (Vorher-Nachher-Vergleich)
-      und legt diese mit Datum in Historie_xx-Tabellen ab
-      Läuft schnell, daher ohne Fortschrittsnazeige
-
-      .. vba:vbfunc:: Access_Historie_aktualisieren()
-         :scope: Public
-
-         Berechnet durch neuen Import entstande Unterschiede (Vorher-Nachher-Vergleich)
-         und legt diese mit Datum in Historie_xx-Tabellen ab
-         Läuft schnell, daher ohne Fortschrittsnazeige
-
-
-
-      .. vba:vbsub:: HistorieAuftragsposLagerndStatus()
-         :scope: Public
-
-         Auftragspositionen, die seit dem letzten Einlesen erstmals ausreichend auf Lager liegen, in Tabelle Historie_Auftragspos eintragen
-
-
-
-      .. vba:vbsub:: HistorieKAlagerndStatus()
-         :scope: Public
-
-         Historie für KA alle Teile auf Lager aktualisieren
-
-
-
-      .. vba:vbsub:: HistorieErsatzStatus()
-         :scope: Public
-
-         Historie für Ersatzstatus aktualisieren
-
-
-
-   .. vba:vbmodule:: Import_Ablauf
-
-
-      .. vba:vbconst:: maxSchritt = 11
+      .. vba:vbfunc:: open_rs_retry(sql$) As Recordset
          :scope: Public
 
 
-      .. vba:vbsub:: Import2Access()
+         :arg $ sql:
+         :returns:
+         :returntype: Recordset
+
+
+      .. vba:vbfunc:: open_rs(sql$) As Recordset
          :scope: Public
 
-         Liest neuen Datenstand aus UNIPPS und Ersatzkommissionen.xls nach Access
-         hauptroutine des Imports
+
+         :arg $ sql:
+         :returns:
+         :returntype: Recordset
 
 
+      .. vba:vbfunc:: sql_cmd_no_output(sql$) As Long
+         :scope: Public
 
-      .. vba:vbsub:: Unipps_2Access()
+
+         :arg $ sql:
+         :returns:
+         :returntype: Long
+
+
+      .. vba:vbsub:: recordset_2_sheet(myrange As Range, Optional myrs As Recordset, Optional clear As Boolean, Optional header As Boolean)
+
+
+         :arg Range myrange:
+         :arg Recordset myrs:
+         :arg Boolean clear:
+         :arg Boolean header:
+
+
+      .. vba:vbsub:: append_recordset_2_sheet(myrange As Range, Optional myrs As Recordset)
+
+
+         :arg Range myrange:
+         :arg Recordset myrs:
+
+
+      .. vba:vbsub:: header_2_sheet(myrange As Range, Optional myrs As Recordset)
+         :scope: Public
+
+
+         :arg Range myrange:
+         :arg Recordset myrs:
+
+
+      .. vba:vbsub:: test_output(Optional myrs As Recordset)
+         :scope: Public
+
+
+         :arg Recordset myrs:
+
+
+      .. vba:vbfunc:: Anzahl(sql$) As Long
+         :scope: Public
+
+
+         :arg $ sql:
+         :returns:
+         :returntype: Long
+
+
+      .. vba:vbsub:: Open_Informix_Connection()
          :scope: Public
 
 
 
 
-      .. vba:vbfunc:: hole_letzten_Datenstand()
-         :scope: Public
-
-         Lies das Datum des letzten UNIPPS-Imports aus Access-Tabelle ProgParameter
-
-
-
-      .. vba:vbfunc:: DB_locked() As Boolean
+      .. vba:vbsub:: Open_SQLite_Connection(db_path$)
          :scope: Public
 
 
+         :arg $ db_path:
+
+
+      .. vba:vbsub:: Open_Excel_Connection(path_2_workbook$)
+         :scope: Public
+
+
+         :arg $ path_2_workbook:
+
+
+      .. vba:vbsub:: Open_Txt_Connection(data_source_dir$)
+
+
+         :arg $ data_source_dir:
+
+
+      .. vba:vbsub:: Class_Terminate()
+         :scope: Private
+
+
+
+
+      .. vba:vbfunc:: sql_cmd_with_output(sql$) As Recordset
+         :scope: Public
+
+
+         :arg $ sql:
+         :returns:
+         :returntype: Recordset
+
+
+   .. vba:vbclass:: Kalenderwoche
+
+      !!!!!!!!!!!!!! Fehler ?? letzte Tage am Jahresende werden zu  KW1 im nächsten Jahr
+
+      .. vba:vbvar:: locWednesday As Date
+         :scope: Private
+
+         !!!!!!!!!!!!!! Fehler ?? letzte Tage am Jahresende werden zu  KW1 im nächsten Jahr
+
+      .. vba:vbvar:: locKW%
+         :scope: Private
+
+
+      .. vba:vbprop:: Mittwoch As Date
+         :scope: Public
+
+
+      .. vba:vbprop:: KW_txt As String
+         :scope: Public
+
+
+      .. vba:vbprop:: KW_int As Integer
+         :scope: Public
+
+
+      .. vba:vbprop:: Anfang As Date
+         :scope: Public
+
+
+      .. vba:vbprop:: Ende As Date
+         :scope: Public
+
+
+      .. vba:vbfunc:: Mittwoch_der_KW(myKW_txt As String) As Date
+         :scope: Public
+
+
+         :arg String myKW_txt:
+         :returns:
+         :returntype: Date
+
+
+      .. vba:vbfunc:: Mittwoch_gleiche_Woche(myday As Date) As Date
+         :scope: Public
+
+
+         :arg Date myday:
+         :returns:
+         :returntype: Date
+
+
+      .. vba:vbfunc:: greater(testKW$) As Boolean
+         :scope: Public
+
+
+         :arg $ testKW:
          :returns:
          :returntype: Boolean
 
 
-      .. vba:vbsub:: schreibe_Lock(verriegeln As Boolean)
+      .. vba:vbfunc:: greater_eq(testKW$) As Boolean
          :scope: Public
 
 
-         :arg Boolean verriegeln:
+         :arg $ testKW:
+         :returns:
+         :returntype: Boolean
 
 
-      .. vba:vbfunc:: schreibe_letzten_Datenstand(datum As Date)
+      .. vba:vbfunc:: KW_plus_1_as_Text(old_KW_txt$) As String
          :scope: Public
 
 
-         :arg Date datum:
-
-
-      .. vba:vbfunc:: FortschrittZeigen(Schrittnr%, maxSchritt%, Text$)
-         :scope: Public
-
-
-         :arg % Schrittnr:
-         :arg % maxSchritt:
-         :arg $ Text:
-
-
-   .. vba:vbmodule:: Import_Ersatz_Excelsheet
-
-      Modul zum Lesen des Bearbeitungsstands in der Ersatzabteilung aus Ersatzkommissionen.xls
-      Es wird zunächst die kleinste und die höchste Id aller nicht gelieferten Kundenaufträge ermittelt,
-      deren Liefertermin in der Vergangenheit oder bis 3 Wochen in der Zukunft liegt
-      Mit diesen Id's first_KA, last_KA werden in Excel die Blätter gelesen, die diesen ID-Bereich enthalten
-      Dazu werden die ersten 3 Zeichen der Id mit den ersten 3 Zeichen der Sheetnamen verglichen
-      Alle Paaren aus nicht leeren Auftragsnummern und Status dieser Blätter, werden in Access gespeichert
-      Darunter sind in der Regel auch Id's, die nicht aus dem Bereich first_KA, last_KA stammen
-      Umgekehrt kann der Bereich Id'S enthalten, die nocht nicht in Excel eingetragen sind
-
-      .. vba:vbsub:: lies_Ersatz_Status_aus_Excel()
-         :scope: Public
-
-         Modul zum Lesen des Bearbeitungsstands in der Ersatzabteilung aus Ersatzkommissionen.xls
-         Es wird zunächst die kleinste und die höchste Id aller nicht gelieferten Kundenaufträge ermittelt,
-         deren Liefertermin in der Vergangenheit oder bis 3 Wochen in der Zukunft liegt
-         Mit diesen Id's first_KA, last_KA werden in Excel die Blätter gelesen, die diesen ID-Bereich enthalten
-         Dazu werden die ersten 3 Zeichen der Id mit den ersten 3 Zeichen der Sheetnamen verglichen
-         Alle Paaren aus nicht leeren Auftragsnummern und Status dieser Blätter, werden in Access gespeichert
-         Darunter sind in der Regel auch Id's, die nicht aus dem Bereich first_KA, last_KA stammen
-         Umgekehrt kann der Bereich Id'S enthalten, die nocht nicht in Excel eingetragen sind
-
-
-
-      .. vba:vbsub:: Durchsuche_Excel_Blatt(mysheet As Worksheet, rs As Recordset)
-         :scope: Private
-
-         Speichert alle Einträge "Kundenauftragsid"/"Status" eines Excel-Sheets in Access-Tabelle
-
-         :arg Worksheet mysheet:
-         :arg Recordset rs:
-
-
-      .. vba:vbfunc:: hole_sql_KA_3Wochen() As String
-         :scope: Public
-
-         ermittelt SQl um gewünschten Bereich von Aufträgen aus Access zu lesen
-
+         :arg $ old_KW_txt:
          :returns:
          :returntype: String
 
 
-   .. vba:vbmodule:: sql_create_table
+   .. vba:vbmodule:: Datum
 
-      Modul mit SQL zum Anlegen einiger Tabellen
 
-      .. vba:vbconst:: sql_auftragsposition = "CREATE TABLE Auftragspos ( " & "id_apos INTEGER CONSTRAINT pk PRIMARY KEY," & "ident_nr1 INTEGER, " & "ident_nr2 INTEGER," & "ueb_nr INTEGER," & "pos CHAR," & "t_tg_nr CHAR," & "besch_art INTEGER, " & "Lager_ort CHAR," & "Lager100 BIT DEFAULT 0," & "Lager_frei INTEGER DEFAULT 0," & "Lager_res INTEGER DEFAULT 0, " & "bedarf_auftrag INTEGER DEFAULT 0, " & "bedarf_pos INTEGER DEFAULT 0, " & "bedarf_dispo INTEGER DEFAULT 0, " & "ist_super_pos BIT DEFAULT 0, " & "fehlbestand BIT DEFAULT -1, " & "fehlbest_status INTEGER DEFAULT 0"                                  & ");"
-         :scope: Public
-
-         Modul mit SQL zum Anlegen einiger Tabellen
-
-      .. vba:vbconst:: sql_teile = "CREATE TABLE Teile ( " & "t_tg_nr CHAR CONSTRAINT pk PRIMARY KEY," & "v_ort_frei CHAR," & "Lager_100 BIT DEFAULT 0," & "Lagerbestand INTEGER DEFAULT 0"                                  & ");"
+      .. vba:vbfunc:: odbc_xl_date(mydate As Date) As String
          :scope: Public
 
 
-      .. vba:vbconst:: sql_dispobestand = "CREATE TABLE Teile_Dispobestand ( " & "id INTEGER CONSTRAINT pk PRIMARY KEY," & "t_tg_nr CHAR," & "art INTEGER, " & "datum DATETIME," & "beleg_nr INTEGER," & "beleg_pos INTEGER," & "kunde INTEGER," & "auftr_nr INTEGER DEFAULT 0," & "verurs_nr INTEGER DEFAULT 0," & "menge INTEGER DEFAULT 0," & "res_Lagerbestand INTEGER DEFAULT 0 "                                  & ");"
+         :arg Date mydate:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: odbc_csv_datetime(mydate As Date) As String
          :scope: Public
 
 
-   .. vba:vbclass:: Wochenstatus
+         :arg Date mydate:
+         :returns:
+         :returntype: String
 
-      Anzahl aller KA einer Woche
 
-      .. vba:vbvar:: nKA%
-         :scope: Public
-
-         Anzahl aller KA einer Woche
-
-      .. vba:vbvar:: nerl%
-         :scope: Public
-
-         Anzahl der erledigten KA (Status=> 4)
-
-      .. vba:vbvar:: noffen%
-         :scope: Public
-
-         Anzahl der offenen KA (Status < 4)
-
-      .. vba:vbvar:: nLager100%
-         :scope: Public
-
-         Anzahl der offenen KA, deren Teile alle auf 100'er lagerorten liegen
-
-      .. vba:vbvar:: nErsatz%
-         :scope: Public
-
-         Anzahl der offenen KA, deren Teile nicht alle auf 100'er lagerorten liegen
-
-      .. vba:vbvar:: nVersand%
-         :scope: Public
-
-         Anzahl der der offenen KA, die im Versand bereit stehen
-
-      .. vba:vbvar:: nFehlteil%
-         :scope: Public
-
-         Anzahl der der offenen KA, für die Teile fehlen
-
-      .. vba:vbsub:: BerechneStatus(KAListe As KA_Liste, MittwochKW As Date)
+      .. vba:vbfunc:: odbc_csv_date(mydate As Date) As String
          :scope: Public
 
 
-         :arg KA_Liste KAListe:
-         :arg Date MittwochKW:
+         :arg Date mydate:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: KW(tag As Date) As Integer
+         :scope: Public
+
+
+         :arg Date tag:
+         :returns:
+         :returntype: Integer
+
+
+      .. vba:vbfunc:: KWstr(tag As Date) As String
+         :scope: Public
+
+
+         :arg Date tag:
+         :returns:
+         :returntype: String
+
+
+   .. vba:vbmodule:: UNIPPS2Excel_Tools
+
+
+      .. vba:vbconst:: f_auftragkopf = "FROM ( " & "( " & " ( " & "f_auftragkopf INNER JOIN auftragpos " & "ON f_auftragkopf.auftr_pos = auftragpos.ident_nr2 AND f_auftragkopf.auftr_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN auftragkopf ON f_auftragkopf.auftr_nr = auftragkopf.ident_nr " & ") " & "INNER JOIN kunde ON auftragkopf.kunde = kunde.ident_nr " & ") "          & "INNER JOIN adresse ON kunde.adresse = adresse.ident_nr "
+         :scope: Public
+
+
+      .. vba:vbconst:: f_auftragkopf_auftragkopf_auftragpos = "FROM ( " & "f_auftragkopf INNER JOIN auftragpos " & "ON f_auftragkopf.auftr_pos = auftragpos.ident_nr2 AND f_auftragkopf.auftr_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN auftragkopf ON f_auftragkopf.auftr_nr = auftragkopf.ident_nr "
+         :scope: Public
+
+
+      .. vba:vbconst:: auftragkopf_auftragpos_teil = "FROM ( " & "auftragkopf INNER JOIN auftragpos " & "ON auftragkopf.ident_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN teil ON auftragpos.t_tg_nr = teil.ident_nr "
+         :scope: Public
+
+
+      .. vba:vbfunc:: sql_ersatz_Etiketten_nur_ID(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_ersatz_Etiketten_nur_ID_per_ID(auftragkopf_ident_nr As Long)
+         :scope: Public
+
+
+         :arg Long auftragkopf_ident_nr:
+
+
+      .. vba:vbfunc:: sql_ersatz_Etiketten_per_ID(auftragkopf_ident_nr As Long)
+         :scope: Public
+
+
+         :arg Long auftragkopf_ident_nr:
+
+
+      .. vba:vbfunc:: sql_ersatz_Etiketten(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_ersatz()
+         :scope: Public
+
+
+
+
+      .. vba:vbfunc:: sql_offene_Pumpen()
+         :scope: Public
+
+
+
+
+      .. vba:vbfunc:: sql_offen_und_fgm_seit_datum(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_offen_und_fgm_nach_Lieferkw_seit_Lieferkw(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_reparatur()
+         :scope: Public
+
+
+
+
+      .. vba:vbfunc:: sql_ersatz_kumuliert()
+         :scope: Public
+
+
+
+
+      .. vba:vbfunc:: sql_pumpen_FA(start_datum As Date) As String
+         :scope: Public
+
+
+         :arg Date start_datum:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: sql_pumpen_KA(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_pumpen_KA_fgm(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: UNIPPS_Import(sql$, target_rng As Range) As Long
+
+
+         :arg $ sql:
+         :arg Range target_rng:
+         :returns:
+         :returntype: Long
+
+
+      .. vba:vbsub:: get_KW(myrange As Range)
+
+
+         :arg Range myrange:
 

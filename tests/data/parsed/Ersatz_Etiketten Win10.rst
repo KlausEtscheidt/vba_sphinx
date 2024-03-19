@@ -4,711 +4,868 @@ Ersatz_Etiketten Win10
 .. vba:module:: Ersatz_Etiketten Win10
 
 
-   .. vba:vbmodule:: Globals
+   .. vba:vbmodule:: Konstruktoren
 
 
-      .. vba:vbconst:: testmode = False
+      .. vba:vbfunc:: New_DB_Reader() As DB_Reader
          :scope: Public
 
 
-      .. vba:vbconst:: test_ab = "132372"
-         :scope: Public
-
-
-      .. vba:vbconst:: label_type = "A" 
-         :scope: Public
-
-
-      .. vba:vbconst:: Seitenrand_oben = 2 
-         :scope: Public
-
-
-      .. vba:vbconst:: Seitenrand_unten = 0 
-         :scope: Public
-
-
-      .. vba:vbconst:: Anz_Etik_vert = 4 
-         :scope: Public
-
-
-      .. vba:vbconst:: ER_v_oben_vor = 3 
-         :scope: Public
-
-
-      .. vba:vbconst:: ER_v_oben_nach = 8 
-         :scope: Public
-
-
-      .. vba:vbconst:: ER_v_unten_vor = 9 
-         :scope: Public
-
-
-      .. vba:vbconst:: ER_v_unten_nach = 3 
-         :scope: Public
-
-
-      .. vba:vbconst:: ER_v_mitte_vor = 11 
-         :scope: Public
-
-
-      .. vba:vbconst:: ER_v_mitte_nach = 11.5 
-         :scope: Public
-
-
-      .. vba:vbconst:: h_abnr = 11 
-         :scope: Public
-
-
-      .. vba:vbconst:: h_ueb_pos = 14 
-         :scope: Public
-
-
-      .. vba:vbconst:: h_ueb_bez = 14 
-         :scope: Public
-
-
-      .. vba:vbconst:: h_standard = 12 
-         :scope: Public
-
-
-      .. vba:vbconst:: max_lines = 16               
-         :scope: Public
-
-
-      .. vba:vbconst:: max_print_seiten = 10   
-         :scope: Public
-
-
-      .. vba:vbconst:: xls_auftragsbestand_dir = "V:\Fertigung\Excel Makros"
-         :scope: Public
-
-
-      .. vba:vbconst:: xls_auftragsbestand_file = "Etiketten Win10.xls"
-         :scope: Public
-
-
-      .. vba:vbconst:: xls_auftragsbestand_main_sheet = "Import"   
-         :scope: Public
-
-
-      .. vba:vbconst:: xls_auftragsbestand_KA_sheet = "KA"   
-         :scope: Public
-
-
-      .. vba:vbconst:: xls_print_sheet = "Print"   
-         :scope: Public
-
-
-      .. vba:vbconst:: xls_status_sheet = "Status"   
-         :scope: Public
-
-
-      .. vba:vbconst:: xls_ui_sheet = "Start"   
-         :scope: Public
-
-
-      .. vba:vbvar:: prog_status As Status_typ
-         :scope: Public
-
-
-      .. vba:vbvar:: pump_mode
-         :scope: Public
-
-
-      .. vba:vbvar:: data_wb As Workbook
-         :scope: Public
-
-
-      .. vba:vbvar:: main_sheet As Worksheet
-         :scope: Public
-
-
-      .. vba:vbvar:: KA_sheet As Worksheet
-         :scope: Public
-
-
-      .. vba:vbvar:: print_sheet As Worksheet
-         :scope: Public
-
-
-      .. vba:vbvar:: status_sheet As Worksheet
-         :scope: Public
-
-
-      .. vba:vbvar:: UI_sheet As Worksheet
-         :scope: Public
-
-
-      .. vba:vbvar:: lines_per_page
-         :scope: Public
-
-
-      .. vba:vbvar:: KA_Id_max
-         :scope: Public
-
-
-      .. vba:vbvar:: KA_Id_min
-         :scope: Public
-
-
-      .. vba:vbvar:: KA_Id_liste As Long
-         :scope: Public
-
-
-      .. vba:vbvar:: UNIPPS_dbr As DB_Reader
-         :scope: Public
-
-
-      .. vba:vbsub:: set_globals()
-         :scope: Public
-
-
-
-
-   .. vba:vbmodule:: Menues
-
-
-      .. vba:vbsub:: Workbook_Open_handler()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: main_Print_multi()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: main_Print_single()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: main_Update_Auftragsbestand()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: main_Pumpenauftrag_lesen_und_drucken()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: main_Update_format()
-         :scope: Public
-
-
-
-
-   .. vba:vbmodule:: Spielwiese
-
-
-      .. vba:vbsub:: test()
-
-
-
-
-   .. vba:vbmodule:: Auftragsbestand
-
-
-      .. vba:vbfunc:: get_min_KA_Id()
-         :scope: Public
-
-
-
-
-      .. vba:vbfunc:: get_min_KA_date()
-         :scope: Public
-
-
-
-
-      .. vba:vbfunc:: get_max_KA_Id()
-         :scope: Public
-
-
-
-
-      .. vba:vbfunc:: get_max_KA_date()
-         :scope: Public
-
-
-
-
-      .. vba:vbfunc:: translate(text_id, sprache)
-         :scope: Public
-
-
-         :arg  text_id:
-         :arg  sprache:
-
-
-      .. vba:vbfunc:: id_in_excel(id_2_searchfor As Long)
-         :scope: Public
-
-
-         :arg Long id_2_searchfor:
-
-
-      .. vba:vbsub:: get_list_of_ab_ids(min_id As Long, max_id As Long)
-         :scope: Public
-
-
-         :arg Long min_id:
-         :arg Long max_id:
-
-
-      .. vba:vbsub:: get_ka_ID_only_from_unipps(start_datum As Date)
-         :scope: Public
-
-
-         :arg Date start_datum:
-
-
-      .. vba:vbsub:: get_ka_ID_only_from_unipps_per_ID(auftragkopf_ident_nr As Long)
-         :scope: Public
-
-
-         :arg Long auftragkopf_ident_nr:
-
-
-      .. vba:vbsub:: get_ka_with_data_from_unipps(start_datum As Date)
-         :scope: Public
-
-
-         :arg Date start_datum:
-
-
-      .. vba:vbsub:: get_ka_with_data_from_unipps_per_ID(auftragkopf_ident_nr As Long)
-         :scope: Public
-
-
-         :arg Long auftragkopf_ident_nr:
-
-
-      .. vba:vbfunc:: teileinfo(tg_nr, sprache, art) As Recordset
-         :scope: Private
-
-
-         :arg  tg_nr:
-         :arg  sprache:
-         :arg  art:
          :returns:
-         :returntype: Recordset
+         :returntype: DB_Reader
 
 
-      .. vba:vbsub:: fuege_Teile_Info_an()
+      .. vba:vbfunc:: New_KW_from_date(myday As Date) As Kalenderwoche
          :scope: Public
 
 
-
-
-   .. vba:vbmodule:: Formatieren
-
-
-      .. vba:vbconst:: pages_2_format = 100
-
-
-      .. vba:vbconst:: withlines = False
-
-
-      .. vba:vbsub:: format_print_sheet()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: format_print_sheet_columns()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: format_print_sheet_common()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: format_print_sheet_page_breaks()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: print_test_page()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: format_rows_for_one_label(row As Long, ER_vor, ER_nach)
-         :scope: Public
-
-
-         :arg Long row:
-         :arg  ER_vor:
-         :arg  ER_nach:
-
-
-      .. vba:vbsub:: format_print_sheet_rows()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: xxxformat_print_sheet_rows()
-         :scope: Public
-
-
-
-
-      .. vba:vbsub:: copy_page_format()
-         :scope: Public
-
-
-
-
-   .. vba:vbmodule:: Tools
-
-
-      .. vba:vbfunc:: add_sheet(name) As Worksheet
-
-
-         :arg  name:
+         :arg Date myday:
          :returns:
-         :returntype: Worksheet
+         :returntype: Kalenderwoche
 
 
-      .. vba:vbsub:: del_sheet(sheet2del As Worksheet)
-
-
-         :arg Worksheet sheet2del:
-
-
-   .. vba:vbform:: Vorauswahl_frm
-
-
-      .. vba:vbvar:: ok_pressed As Boolean
+      .. vba:vbfunc:: New_KW_from_text(mytext$) As Kalenderwoche
          :scope: Public
 
 
-      .. vba:vbsub:: ESC_btn_Click()
-         :scope: Private
+         :arg $ mytext:
+         :returns:
+         :returntype: Kalenderwoche
 
 
-
-
-      .. vba:vbsub:: OK_btn_Click()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: UserForm_Activate()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: UserForm_Initialize()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: Update_Form_Before_Showing()
-
-
-
-
-   .. vba:vbmodule:: Status
-
-
-      .. vba:vbsub:: Status_lesen()
+      .. vba:vbfunc:: New_XML_Toolbox() As XML_Toolbox
          :scope: Public
 
 
+         :returns:
+         :returntype: XML_Toolbox
 
 
-      .. vba:vbsub:: Status_speichern()
+      .. vba:vbfunc:: New_Projekt_record() As Projekt_record
          :scope: Public
 
 
+         :returns:
+         :returntype: Projekt_record
 
 
-   .. vba:vbform:: Import_frm
-
-
-      .. vba:vbvar:: importieren As Boolean
+      .. vba:vbfunc:: New_Pos_unterpos_records(myQM_XML_Doc As QM_XML_Doc, search$) As Pos_unterpos_records
          :scope: Public
 
 
-      .. vba:vbsub:: ESC_btn_Click()
-         :scope: Private
+         :arg QM_XML_Doc myQM_XML_Doc:
+         :arg $ search:
+         :returns:
+         :returntype: Pos_unterpos_records
 
 
-
-
-      .. vba:vbsub:: OK_btn_Click()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: UserForm_Activate()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: UserForm_Initialize()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: Update_Form_Before_Showing()
-
-
-
-
-   .. vba:vbmodule:: Transfer_2_print_Sheet
-
-
-      .. vba:vbvar:: out_row As Long
+      .. vba:vbfunc:: New_QM_XML_Doc() As QM_XML_Doc
          :scope: Public
 
 
-      .. vba:vbsub:: transfer_selected_ABs()
+         :returns:
+         :returntype: QM_XML_Doc
+
+
+   .. vba:vbclass:: XML_Toolbox
+
+
+      .. vba:vbvar:: cls_xmlDoc As DOMDocument60
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_xmlRoot As IXMLDOMElement
+         :scope: Private
+
+
+      .. vba:vbprop:: xmlRoot As IXMLDOMElement
+         :scope: Public
+
+
+      .. vba:vbprop:: xmldoc As DOMDocument60
+         :scope: Public
+
+
+      .. vba:vbsub:: open_Doc(ByVal XmlDateiMitPfad As String)
+         :scope: Public
+
+
+         :arg String XmlDateiMitPfad:
+
+
+      .. vba:vbsub:: create_Doc()
          :scope: Public
 
 
 
 
-      .. vba:vbfunc:: transfer_single_AB(start_row As Long, id As Long) As Long
+      .. vba:vbsub:: save_Doc(file_name$)
          :scope: Public
 
 
-         :arg Long start_row:
-         :arg Long id:
+         :arg $ file_name:
+
+
+      .. vba:vbfunc:: get_attribute_value(base_node As IXMLDOMElement, att_name$)
+         :scope: Public
+
+
+         :arg IXMLDOMElement base_node:
+         :arg $ att_name:
+
+
+      .. vba:vbfunc:: search_for_node(base_node As IXMLDOMElement, xpathsearch_str$) As IXMLDOMElement
+         :scope: Public
+
+
+         :arg IXMLDOMElement base_node:
+         :arg $ xpathsearch_str:
+         :returns:
+         :returntype: IXMLDOMElement
+
+
+      .. vba:vbfunc:: search_for_nodes(base_node As IXMLDOMElement, xpathsearch_str$) As IXMLDOMNodeList
+         :scope: Public
+
+
+         :arg IXMLDOMElement base_node:
+         :arg $ xpathsearch_str:
+         :returns:
+         :returntype: IXMLDOMNodeList
+
+
+   .. vba:vbmodule:: XL_Tools
+
+
+      .. vba:vbsub:: Abbruchmeldung(msg$)
+
+
+         :arg $ msg:
+
+
+      .. vba:vbfunc:: Oeffne_Excel(name$, Pfad$) As Workbook
+
+
+         :arg $ name:
+         :arg $ Pfad:
+         :returns:
+         :returntype: Workbook
+
+
+      .. vba:vbfunc:: Waehle_Datei(Optional msg$ = "", Optional path$ = "", Optional filter$ = "") As Variant
+
+
+         :arg $ msg:
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbsub:: write_header(mysheet As Worksheet, start_cell, headertxt)
+
+
+         :arg Worksheet mysheet:
+         :arg  start_cell:
+         :arg  headertxt:
+
+
+      .. vba:vbfunc:: hole_zeilen(myrange As Range) As Long
+
+
+         :arg Range myrange:
          :returns:
          :returntype: Long
 
 
-      .. vba:vbsub:: print_attribute_with_translation(in_row As Long, in_col%, out_row As Long, out_col%, trans_id, sprache)
+      .. vba:vbfunc:: FileExists(ByVal File As String) As Boolean
+
+
+         :arg String File:
+         :returns:
+         :returntype: Boolean
+
+
+   .. vba:vbmodule:: QM2XL_Tools
+
+
+      .. vba:vbvar:: cls_record As record
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_parent As QM_XML_Doc
+         :scope: Private
+
+
+      .. vba:vbsub:: fill_from_XML_Doc(parent_QM_XML_Doc As QM_XML_Doc)
          :scope: Public
 
 
-         :arg Long in_row:
-         :arg % in_col:
-         :arg Long out_row:
-         :arg % out_col:
-         :arg  trans_id:
-         :arg  sprache:
+         :arg QM_XML_Doc parent_QM_XML_Doc:
 
 
-      .. vba:vbsub:: transfer_single_label(in_row As Long, start_out_row As Long, out_col%)
+      .. vba:vbsub:: testprint2sheet(Optional myrange As Range)
          :scope: Public
 
 
-         :arg Long in_row:
-         :arg Long start_out_row:
-         :arg % out_col:
+         :arg Range myrange:
 
 
-      .. vba:vbsub:: print_preview()
-
-
-
-
-      .. vba:vbsub:: print_it()
-
-
-
-
-   .. vba:vbform:: multi_Auswahl_frm
-
-
-      .. vba:vbvar:: ok_pressed As Boolean
+      .. vba:vbfunc:: value(key$) As String
          :scope: Public
 
 
-      .. vba:vbsub:: ESC_btn_Click()
+         :arg $ key:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: items() As Variant
+         :scope: Public
+
+
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbfunc:: keys() As Variant
+         :scope: Public
+
+
+         :returns:
+         :returntype: Variant
+
+
+   .. vba:vbclass:: Pos_unterpos_records
+
+
+      .. vba:vbvar:: cls_UPos_record As record
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_Pos_record As record
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_pos_upos_nodes As IXMLDOMNodeList
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_parent As QM_XML_Doc
+         :scope: Private
+
+
+      .. vba:vbprop:: pos_record As record
+         :scope: Public
+
+
+      .. vba:vbprop:: Upos_record As record
+         :scope: Public
+
+
+      .. vba:vbprop:: node_count As Integer
+         :scope: Public
+
+
+      .. vba:vbsub:: init(myQM_XML_Doc As QM_XML_Doc, search$)
+
+
+         :arg QM_XML_Doc myQM_XML_Doc:
+         :arg $ search:
+
+
+      .. vba:vbsub:: make_record_current(id%)
+         :scope: Public
+
+
+         :arg % id:
+
+
+      .. vba:vbsub:: testprint_cur_record2sheet(Optional myrange As Range)
+         :scope: Public
+
+
+         :arg Range myrange:
+
+
+      .. vba:vbfunc:: cur_rec_field(typ$, key$)
+         :scope: Public
+
+
+         :arg $ typ:
+         :arg $ key:
+
+
+   .. vba:vbclass:: record
+
+
+      .. vba:vbvar:: cls_record As Dictionary
+         :scope: Private
+
+
+      .. vba:vbprop:: record As record
+         :scope: Public
+
+
+      .. vba:vbsub:: fill_from_XML_Doc(myXMLnode As IXMLDOMElement)
+         :scope: Public
+
+
+         :arg IXMLDOMElement myXMLnode:
+
+
+      .. vba:vbfunc:: count() As Integer
+         :scope: Public
+
+
+         :returns:
+         :returntype: Integer
+
+
+      .. vba:vbfunc:: items() As Variant
+         :scope: Public
+
+
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbfunc:: keys() As Variant
+         :scope: Public
+
+
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbfunc:: value(key$) As String
+         :scope: Public
+
+
+         :arg $ key:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbsub:: testprint2sheet(headline$, Optional myrange As Range)
+         :scope: Public
+
+
+         :arg $ headline:
+         :arg Range myrange:
+
+
+   .. vba:vbclass:: QM_XML_Doc
+
+
+      .. vba:vbvar:: cls_xmlDoc As DOMDocument60
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_XML_Toolbox As XML_Toolbox
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_Projekt_record As Projekt_record
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_pump_records As Pos_unterpos_records
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_dok_date As Date
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_dok_typ$
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_dok_rev$
+         :scope: Private
+
+
+      .. vba:vbvar:: cls_dok_proj_nr$
+         :scope: Private
+
+
+      .. vba:vbprop:: XML_Toolbox As Variant
+         :scope: Public
+
+
+      .. vba:vbprop:: xmlRoot As IXMLDOMElement
+         :scope: Public
+
+
+      .. vba:vbprop:: xmldoc As DOMDocument60
+         :scope: Public
+
+
+      .. vba:vbprop:: Projekt_record As Projekt_record
+         :scope: Public
+
+
+      .. vba:vbprop:: pump_count As Integer
+         :scope: Public
+
+
+      .. vba:vbprop:: Pump_records As Pos_unterpos_records
+         :scope: Public
+
+
+      .. vba:vbprop:: dok_date As Date
+         :scope: Public
+
+
+      .. vba:vbprop:: dok_typ As String
+         :scope: Public
+
+
+      .. vba:vbprop:: dok_rev As String
+         :scope: Public
+
+
+      .. vba:vbprop:: dok_proj_nr As String
+         :scope: Public
+
+
+      .. vba:vbsub:: open_Single_Doc(Optional default_dir$ = "", Optional ByVal fileToOpen As String = "")
+         :scope: Public
+
+
+         :arg $ default_dir:
+
+
+      .. vba:vbfunc:: get_document_tag(tag_path$) As Variant
+         :scope: Private
+
+
+         :arg $ tag_path:
+         :returns:
+         :returntype: Variant
+
+
+      .. vba:vbsub:: search_pumps()
          :scope: Private
 
 
 
 
-      .. vba:vbsub:: OK_btn_Click()
+      .. vba:vbsub:: keys2sheet(Optional myrange As Range)
+         :scope: Public
+
+
+         :arg Range myrange:
+
+
+      .. vba:vbsub:: testprint2sheet(Optional myrange As Range)
+         :scope: Public
+
+
+         :arg Range myrange:
+
+
+      .. vba:vbfunc:: cur_rec_field(typ$, key$)
+         :scope: Public
+
+
+         :arg $ typ:
+         :arg $ key:
+
+
+      .. vba:vbfunc:: keys(typ$) As Variant
+         :scope: Public
+
+
+         :arg $ typ:
+         :returns:
+         :returntype: Variant
+
+
+   .. vba:vbclass:: DB_Reader
+
+
+      .. vba:vbvar:: locAdoConnection As ADODB.Connection
+         :scope: Private
+
+
+      .. vba:vbvar:: locRecordset As ADODB.Recordset
+         :scope: Private
+
+
+      .. vba:vbprop:: rs As Recordset
+         :scope: Public
+
+
+      .. vba:vbprop:: Connection As ADODB.Connection
+         :scope: Public
+
+
+      .. vba:vbprop:: xl_recordset As Recordset
+         :scope: Public
+
+
+      .. vba:vbprop:: txt_recordset As Recordset
+         :scope: Public
+
+
+      .. vba:vbfunc:: open_rs_retry(sql$) As Recordset
+         :scope: Public
+
+
+         :arg $ sql:
+         :returns:
+         :returntype: Recordset
+
+
+      .. vba:vbfunc:: open_rs(sql$) As Recordset
+         :scope: Public
+
+
+         :arg $ sql:
+         :returns:
+         :returntype: Recordset
+
+
+      .. vba:vbfunc:: sql_cmd_no_output(sql$) As Long
+         :scope: Public
+
+
+         :arg $ sql:
+         :returns:
+         :returntype: Long
+
+
+      .. vba:vbsub:: recordset_2_sheet(myrange As Range, Optional myrs As Recordset, Optional clear As Boolean, Optional header As Boolean)
+
+
+         :arg Range myrange:
+         :arg Recordset myrs:
+         :arg Boolean clear:
+         :arg Boolean header:
+
+
+      .. vba:vbsub:: append_recordset_2_sheet(myrange As Range, Optional myrs As Recordset)
+
+
+         :arg Range myrange:
+         :arg Recordset myrs:
+
+
+      .. vba:vbsub:: header_2_sheet(myrange As Range, Optional myrs As Recordset)
+         :scope: Public
+
+
+         :arg Range myrange:
+         :arg Recordset myrs:
+
+
+      .. vba:vbsub:: test_output(Optional myrs As Recordset)
+         :scope: Public
+
+
+         :arg Recordset myrs:
+
+
+      .. vba:vbfunc:: Anzahl(sql$) As Long
+         :scope: Public
+
+
+         :arg $ sql:
+         :returns:
+         :returntype: Long
+
+
+      .. vba:vbsub:: Open_Informix_Connection()
+         :scope: Public
+
+
+
+
+      .. vba:vbsub:: Open_SQLite_Connection(db_path$)
+         :scope: Public
+
+
+         :arg $ db_path:
+
+
+      .. vba:vbsub:: Open_Excel_Connection(path_2_workbook$)
+         :scope: Public
+
+
+         :arg $ path_2_workbook:
+
+
+      .. vba:vbsub:: Open_Txt_Connection(data_source_dir$)
+
+
+         :arg $ data_source_dir:
+
+
+      .. vba:vbsub:: Class_Terminate()
          :scope: Private
 
 
 
 
-      .. vba:vbsub:: print_lb_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+      .. vba:vbfunc:: sql_cmd_with_output(sql$) As Recordset
+         :scope: Public
+
+
+         :arg $ sql:
+         :returns:
+         :returntype: Recordset
+
+
+   .. vba:vbclass:: Kalenderwoche
+
+      !!!!!!!!!!!!!! Fehler ?? letzte Tage am Jahresende werden zu  KW1 im nächsten Jahr
+
+      .. vba:vbvar:: locWednesday As Date
+         :scope: Private
+
+         !!!!!!!!!!!!!! Fehler ?? letzte Tage am Jahresende werden zu  KW1 im nächsten Jahr
+
+      .. vba:vbvar:: locKW%
          :scope: Private
 
 
-         :arg MSForms.ReturnBoolean Cancel:
-
-
-      .. vba:vbsub:: deselect_all_Click()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: deselect_one_Click()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: no_print_lb_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
-         :scope: Private
-
-
-         :arg MSForms.ReturnBoolean Cancel:
-
-
-      .. vba:vbsub:: select_all_Click()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: select_one_Click()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: move_one_Click(source_lb As MSForms.ListBox, target_lb As MSForms.ListBox, moveall As Boolean)
-         :scope: Private
-
-
-         :arg MSForms.ListBox source_lb:
-         :arg MSForms.ListBox target_lb:
-         :arg Boolean moveall:
-
-
-      .. vba:vbsub:: UserForm_Activate()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: UserForm_Initialize()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: Update_Form_Before_Showing()
-
-
-
-
-   .. vba:vbform:: Auswahl_frm
-
-
-      .. vba:vbvar:: ok_pressed As Boolean
+      .. vba:vbprop:: Mittwoch As Date
          :scope: Public
 
 
-      .. vba:vbsub:: ESC_btn_Click()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: OK_btn_Click()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: UserForm_Activate()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: UserForm_Initialize()
-         :scope: Private
-
-
-
-
-      .. vba:vbsub:: Update_Form_Before_Showing()
-
-
-
-
-   .. vba:vbmodule:: Const_Spalten_Namen
-
-
-      .. vba:vbconst:: col_ab_nr = 1
+      .. vba:vbprop:: KW_txt As String
          :scope: Public
 
 
-      .. vba:vbconst:: col_erstanlage = 2
+      .. vba:vbprop:: KW_int As Integer
          :scope: Public
 
 
-      .. vba:vbconst:: col_status = 3
+      .. vba:vbprop:: Anfang As Date
          :scope: Public
 
 
-      .. vba:vbconst:: col_sprache = 4
+      .. vba:vbprop:: Ende As Date
          :scope: Public
 
 
-      .. vba:vbconst:: col_pos_nr = 5
+      .. vba:vbfunc:: Mittwoch_der_KW(myKW_txt As String) As Date
          :scope: Public
 
 
-      .. vba:vbconst:: col_t_tg_nr = 6
+         :arg String myKW_txt:
+         :returns:
+         :returntype: Date
+
+
+      .. vba:vbfunc:: Mittwoch_gleiche_Woche(myday As Date) As Date
          :scope: Public
 
 
-      .. vba:vbconst:: col_werkstoff = 7
+         :arg Date myday:
+         :returns:
+         :returntype: Date
+
+
+      .. vba:vbfunc:: greater(testKW$) As Boolean
          :scope: Public
 
 
-      .. vba:vbconst:: col_spezifikation = 8
+         :arg $ testKW:
+         :returns:
+         :returntype: Boolean
+
+
+      .. vba:vbfunc:: greater_eq(testKW$) As Boolean
          :scope: Public
 
 
-      .. vba:vbconst:: col_typ = 9
+         :arg $ testKW:
+         :returns:
+         :returntype: Boolean
+
+
+      .. vba:vbfunc:: KW_plus_1_as_Text(old_KW_txt$) As String
          :scope: Public
 
 
-      .. vba:vbconst:: col_k_ident = 10
+         :arg $ old_KW_txt:
+         :returns:
+         :returntype: String
+
+
+   .. vba:vbmodule:: Datum
+
+
+      .. vba:vbfunc:: odbc_xl_date(mydate As Date) As String
          :scope: Public
 
 
-      .. vba:vbconst:: col_menge = 11
+         :arg Date mydate:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: odbc_csv_datetime(mydate As Date) As String
          :scope: Public
 
 
-      .. vba:vbconst:: col_k_Typ = 12
+         :arg Date mydate:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: odbc_csv_date(mydate As Date) As String
          :scope: Public
 
 
-      .. vba:vbconst:: col_k_Zchn_Nr = 13
+         :arg Date mydate:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: KW(tag As Date) As Integer
          :scope: Public
 
 
-      .. vba:vbconst:: start_col_teileinfo = 14
+         :arg Date tag:
+         :returns:
+         :returntype: Integer
+
+
+      .. vba:vbfunc:: KWstr(tag As Date) As String
          :scope: Public
 
 
-      .. vba:vbconst:: col_teil_bezeich = 14
+         :arg Date tag:
+         :returns:
+         :returntype: String
+
+
+   .. vba:vbmodule:: UNIPPS2Excel_Tools
+
+
+      .. vba:vbconst:: f_auftragkopf = "FROM ( " & "( " & " ( " & "f_auftragkopf INNER JOIN auftragpos " & "ON f_auftragkopf.auftr_pos = auftragpos.ident_nr2 AND f_auftragkopf.auftr_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN auftragkopf ON f_auftragkopf.auftr_nr = auftragkopf.ident_nr " & ") " & "INNER JOIN kunde ON auftragkopf.kunde = kunde.ident_nr " & ") "          & "INNER JOIN adresse ON kunde.adresse = adresse.ident_nr "
          :scope: Public
+
+
+      .. vba:vbconst:: f_auftragkopf_auftragkopf_auftragpos = "FROM ( " & "f_auftragkopf INNER JOIN auftragpos " & "ON f_auftragkopf.auftr_pos = auftragpos.ident_nr2 AND f_auftragkopf.auftr_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN auftragkopf ON f_auftragkopf.auftr_nr = auftragkopf.ident_nr "
+         :scope: Public
+
+
+      .. vba:vbconst:: auftragkopf_auftragpos_teil = "FROM ( " & "auftragkopf INNER JOIN auftragpos " & "ON auftragkopf.ident_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN teil ON auftragpos.t_tg_nr = teil.ident_nr "
+         :scope: Public
+
+
+      .. vba:vbfunc:: sql_ersatz_Etiketten_nur_ID(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_ersatz_Etiketten_nur_ID_per_ID(auftragkopf_ident_nr As Long)
+         :scope: Public
+
+
+         :arg Long auftragkopf_ident_nr:
+
+
+      .. vba:vbfunc:: sql_ersatz_Etiketten_per_ID(auftragkopf_ident_nr As Long)
+         :scope: Public
+
+
+         :arg Long auftragkopf_ident_nr:
+
+
+      .. vba:vbfunc:: sql_ersatz_Etiketten(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_ersatz()
+         :scope: Public
+
+
+
+
+      .. vba:vbfunc:: sql_offene_Pumpen()
+         :scope: Public
+
+
+
+
+      .. vba:vbfunc:: sql_offen_und_fgm_seit_datum(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_offen_und_fgm_nach_Lieferkw_seit_Lieferkw(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_reparatur()
+         :scope: Public
+
+
+
+
+      .. vba:vbfunc:: sql_ersatz_kumuliert()
+         :scope: Public
+
+
+
+
+      .. vba:vbfunc:: sql_pumpen_FA(start_datum As Date) As String
+         :scope: Public
+
+
+         :arg Date start_datum:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: sql_pumpen_FA_Montageliste(start_datum As Date) As String
+         :scope: Public
+
+
+         :arg Date start_datum:
+         :returns:
+         :returntype: String
+
+
+      .. vba:vbfunc:: sql_pumpen_KA(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: sql_pumpen_KA_fgm(start_datum As Date)
+         :scope: Public
+
+
+         :arg Date start_datum:
+
+
+      .. vba:vbfunc:: UNIPPS_Import(sql$, target_rng As Range) As Long
+
+
+         :arg $ sql:
+         :arg Range target_rng:
+         :returns:
+         :returntype: Long
+
+
+      .. vba:vbsub:: get_KW(myrange As Range)
+
+
+         :arg Range myrange:
 

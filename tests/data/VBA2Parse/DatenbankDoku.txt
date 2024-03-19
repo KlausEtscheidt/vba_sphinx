@@ -1,0 +1,222 @@
+================================================================================
+vbmodule: Modul1
+================================================================================
+Option Compare Database
+Const dbpath = "C:\Users\Etscheidt\Documents\Embarcadero\Studio\Projekte\Zoll\LieferErklaer\db\"
+Const dbname = "LieferErklaer.accdb"
+Global Tabellen As Collection
+Public Sub main()
+    Dim wrkAcc As Workspace
+    Dim db As Database
+    Set Tabellen = New Collection
+    On Error Resume Next
+    'DB öffnen, wenn nicht schon geschehen
+    Set db = wrkAcc.OpenDatabase(dbpath & dbname)
+    On Error GoTo 0
+    'Tabellen der DB lesen
+    GetTables db
+    'Tabellen der DB ausgeben
+    'ShowTables ""
+    ShowTables "rst"
+End Sub
+'Infos zu allen Tabelle ausgeben
+Public Sub ShowTables(ausgabetyp$)
+    Dim mTabelle As Tabelle
+    For Each mTabelle In Tabellen
+        mTabelle.Ausgabe ausgabetyp
+    Next
+End Sub
+'Infos zu allen Tabelle lesen
+Public Sub GetTables(db As Database)
+    Dim tdef As TableDef
+    Dim neueTabelle As Tabelle
+    For Each tdef In db.TableDefs
+        If Left(tdef.Name, 4) <> "MSys" Then
+            Set neueTabelle = New Tabelle
+            neueTabelle.hole_Daten tdef
+            Tabellen.Add neueTabelle
+        End If
+    Next
+End Sub
+
+
+================================================================================
+vbclass: Tabelle
+================================================================================
+Option Compare Database
+Public Name$
+Private tdef As TableDef
+Public felder As Collection
+Public Indizes As Collection
+Public LenFeldName% 'max Länge eines Feldnamens
+Public LenDefault% 'max Länge eines Default-Werts
+Public Sub hole_Daten(my_tdef As TableDef)
+    Set tdef = my_tdef
+    Me.Name = tdef.Name
+    Set felder = New Collection
+    holeFelder
+    Set Indizes = New Collection
+    holeIndizes
+End Sub
+Public Sub holeFelder()
+    Dim myfield As Field
+    LenFeldName = 0
+    LenDefault = 0
+    For Each myfield In tdef.Fields
+        Set neuesFeld = New Feld
+        neuesFeld.hole_Daten myfield
+        Set neuesFeld.Parent = Me
+        felder.Add neuesFeld
+        If Len(neuesFeld.Name) > LenFeldName Then
+            LenFeldName = Len(neuesFeld.Name)
+        End If
+        If Len(neuesFeld.Default) > LenDefault Then
+            LenDefault = Len(neuesFeld.Default)
+        End If
+    Next
+End Sub
+Public Sub holeIndizes()
+    Dim Indexdef As Index
+    For Each Indexdef In tdef.Indexes
+        Set neuerIndex = New TabellenIndex
+        Set neuerIndex.Parent = Me
+        neuerIndex.hole_Daten Indexdef
+        Indizes.Add neuerIndex
+    Next
+End Sub
+Public Sub Ausgabe(ausgabetyp$)
+    Debug.Print vbCrLf & "Tabelle: " & Name
+    AusgabeFelder ausgabetyp
+    AusgabeIndizes ausgabetyp
+End Sub
+Public Sub AusgabeFelder(ausgabetyp$)
+    Dim mFeld As Feld
+    For Each mFeld In felder
+        mFeld.Ausgabe ausgabetyp
+    Next
+End Sub
+Public Sub AusgabeIndizes(ausgabetyp$)
+    Dim Index As TabellenIndex
+    For Each Index In Indizes
+        Index.Ausgabe ausgabetyp
+    Next
+End Sub
+
+
+================================================================================
+vbclass: Feld
+================================================================================
+Option Compare Database
+Private fielddef As Field
+Public Parent As Tabelle
+Public Name$
+Public Default As Variant
+Public Size As Long
+Public erforderlich As Boolean
+Public Inhalt$
+Public FType%
+Public Sub hole_Daten(myfield As Field)
+    Set fielddef = myfield
+    Me.Name = fielddef.Name
+    Me.Default = fielddef.DefaultValue
+    Me.Size = fielddef.Size
+    Me.FType = fielddef.Type '1:Bool 4:Long Int 10:Text 8: Datum
+    Me.erforderlich = fielddef.Required
+    On Error Resume Next
+    Me.Inhalt = fielddef.Properties("Description")
+    On Error GoTo 0
+End Sub
+Public Sub Ausgabe(ausgabetyp$)
+    Dim txt$, fname$
+    If ausgabetyp = "rst" Then
+        AusgabeRst
+    Else
+        'Standard
+        fname = FilledText(Name, Parent.LenFeldName)
+        txt = "   Feld: " & fname & " Default <" & Default & "> erf " & erforderlich & " Typ " & FType & " Size " & Size
+        Debug.Print txt
+    End If
+End Sub
+Public Sub AusgabeRst()
+    Dim txt$, fname$
+    fname = FilledText(Name, Parent.LenFeldName + 2)
+ txt = "   Feld : " & fname & FilledText(CStr(Default), Parent.LenDefault + 2) & Feldtyp(FType)        & Me.Inhalt
+    Debug.Print txt
+End Sub
+Private Function Feldtyp(typid%)
+    If typid = 1 Then
+        Feldtyp = " Bool   "
+    ElseIf typid = 4 Then
+        Feldtyp = " Zahl   "
+    ElseIf typid = 16 Then
+        Feldtyp = " Zahl32 "
+    ElseIf typid = 8 Then
+        Feldtyp = " Datum  "
+    ElseIf typid = 10 Then
+        Feldtyp = " Text   "
+    End If
+End Function
+Private Function FilledText(OriText$, SollLaenge%)
+    Dim nspace%
+    nspace = SollLaenge - Len(OriText)
+    FilledText = OriText + Space(nspace)
+End Function
+
+
+================================================================================
+vbclass: TabellenIndex
+================================================================================
+Option Compare Database
+Private Indexdef As Index
+Public Parent As Tabelle
+Public Name$
+Public Primary As Boolean
+Public Required As Boolean
+Public Unique As Boolean
+Public Feldliste As Collection
+Public Sub hole_Daten(meineIndexdef As Index)
+    Dim IndFeld As Object
+    Set Feldliste = New Collection
+    Set Indexdef = meineIndexdef
+    Me.Name = Indexdef.Name
+    Me.Primary = Indexdef.Primary
+    Me.Required = Indexdef.Required
+    Me.Unique = Indexdef.Unique
+    For Each IndFeld In Indexdef.Fields
+        Feldliste.Add IndFeld.Name
+    Next
+End Sub
+Public Sub Ausgabe(ausgabetyp$)
+    Dim txt$, felder$
+    If ausgabetyp = "rst" Then
+        AusgabeRst
+    Else
+        'Standard
+ txt = "   Index: " & Name & feldnamensliste &        " Prim " & Primary & " Req " & Required & " Uni " & Unique
+        Debug.Print txt
+    End If
+End Sub
+Public Sub AusgabeRst()
+    Dim txt$, felder$, primarykey$
+    If Primary Then
+        primarykey = "  Primary"
+    Else
+        primarykey = ""
+    End If
+    txt = "   Index: " & Name & feldnamensliste & primarykey
+    Debug.Print txt
+End Sub
+'Erzeugt String aus Feldnamen des Index
+Private Function feldnamensliste() As String
+    Dim i%
+    Dim txt$, felder$
+    'Feldnamen
+    felder = "("
+    For i = 1 To Feldliste.Count - 1
+       felder = felder & Feldliste(i) & ","
+    Next
+    feldnamensliste = felder & Feldliste(i) & ")"
+End Function
+
+
+<EndofFile>

@@ -1,1052 +1,1151 @@
 ================================================================================
-vbmodule: Globals
+vbmodule: Konstruktoren
+================================================================================
+'###############################################################################
+' Modul enthält Public Wrapper-Functions zum Erzeugen der PublicNotCreatable-Klassen
+'Diese können nicht aus externen Modulen erzeugt werden, daher dieser Umweg
+'###############################################################################
+Option Explicit
+'Datenbanktools
+'---------------------------------------------------------------------------------------------------
+Public Function New_DB_Reader() As DB_Reader
+    Set New_DB_Reader = New DB_Reader
+End Function
+'Konstruktoren fuer KW
+'------------------------------------------------------------------------
+'aus Datum
+Public Function New_KW_from_date(myday As Date) As Kalenderwoche
+    Set New_KW_from_date = New Kalenderwoche
+    New_KW_from_date.Mittwoch = myday
+End Function
+'aus Text
+Public Function New_KW_from_text(mytext$) As Kalenderwoche
+    Set New_KW_from_text = New Kalenderwoche
+    New_KW_from_text.KW_txt = mytext$
+End Function
+'XML Tools
+'---------------------------------------------------------------------------------------------------
+Public Function New_XML_Toolbox() As XML_Toolbox
+    Set New_XML_Toolbox = New XML_Toolbox
+End Function
+'Klassen fuer wallrodtsche XML
+'---------------------------------------------------------------------------------------------------
+Public Function New_Projekt_record() As Projekt_record
+    Set New_Projekt_record = New Projekt_record
+End Function
+Public Function New_Pos_unterpos_records(myQM_XML_Doc As QM_XML_Doc, search$) As Pos_unterpos_records
+    Set New_Pos_unterpos_records = New Pos_unterpos_records
+    New_Pos_unterpos_records.init myQM_XML_Doc, search
+End Function
+Public Function New_QM_XML_Doc() As QM_XML_Doc
+    Set New_QM_XML_Doc = New QM_XML_Doc
+End Function
+
+
+================================================================================
+vbclass: XML_Toolbox
 ================================================================================
 Option Explicit
-'------Testmodus
-'Fuer Testzwecke nur eine AB einlesen und formatieren
-Public Const testmode = False
-'Public Const testmode = True
-'id der ab, welche gelesen wird
-Public Const test_ab = "132372"
-'Public Const test_ab = "124501"
-'Konfiguration: Seiteneinrichtung
-Public Const label_type = "A" 'A wenn Etiketten ohne Rand über ganze Seite gehen;B wenn Rand vorhanden
-Public Const Seitenrand_oben = 2 'in mm (nicht vom Drucker bedruckbar)
-Public Const Seitenrand_unten = 0 'in mm (oder besser auf Null, da page-break manuell gesetzt)
-Public Const Anz_Etik_vert = 4 'Anzahl der Etiketten übereinander je Seite
-'Etikettenraender; werden nicht bedruckt und durch Leerzeilen in Excel realisiert
-Public Const ER_v_oben_vor = 3 'in mm; Etikettenrand vor dem obersten Etikett der Seite
-Public Const ER_v_oben_nach = 8 'in mm; Etikettenrand nach dem obersten Etikett der Seite
-Public Const ER_v_unten_vor = 9 'in mm; Etikettenrand vor dem untersten Etikett der Seite
-Public Const ER_v_unten_nach = 3 'in mm; Etikettenrand nach dem untersten Etikett der Seite
-'Obere Werte nur fuer Typ A bei oberstem und unterstem Etikett
-'Folgender Wert fuer alle andern Etiketten (mittelere) wenn Typ A
-'und fuer alle Etiketten wenn Typ B
-Public Const ER_v_mitte_vor = 11 'in mm; mindest Etikettenrand (wird nicht bedruckt) unter und ueber jedem Etikett
-Public Const ER_v_mitte_nach = 11.5 'in mm; mindest Etikettenrand (wird nicht bedruckt) unter und ueber jedem Etikett
-'Nutzzeilen
-Public Const h_abnr = 11 'Ab-Nr
-Public Const h_ueb_pos = 14 'Ueberschrift
-Public Const h_ueb_bez = 14 'Zeile 2
-Public Const h_standard = 12 'Standardzeilen
-Public Const max_lines = 16               'max-zahl der nutzbaren Etikettzeilen
-Public Const max_print_seiten = 10   'Max Anzahl der Seiten die ohne Nachfrage gedruckt werden
-'Konfiguration: Verzeichnisse und Sheetnamen
-'Public Const xls_auftragsbestand_dir = "V:\E-MAIL\Dr Etscheidt\Software_entwicklung\Montage"
-Public Const xls_auftragsbestand_dir = "V:\Fertigung\Excel Makros"
-Public Const xls_auftragsbestand_file = "Etiketten Win10.xls"
-Public Const xls_auftragsbestand_main_sheet = "Import"   'Ergebnissheet mit allen Daten
-Public Const xls_auftragsbestand_KA_sheet = "KA"   'Liste aller Auftraege zur Auswahl
-Public Const xls_print_sheet = "Print"   'formatiertes Sheet zum Drucken
-Public Const xls_status_sheet = "Status"   'Status des Programms (letzes Einlesen etc)
-Public Const xls_ui_sheet = "Start"   'User-Inteface
-'Programm Status
-Type Status_typ
-    letzter_Import As Date
-End Type
-Public prog_status As Status_typ
-'Pumpenmodus Dient zum Einlesen und Drucken gemischter Aufträge (Pumpe + ersatz)
-Public pump_mode
-'Sonstige Globals
-Public data_wb As Workbook  'Arbeitsmappe mit Daten
-Public main_sheet As Worksheet 'Ergebnissheet mit allen Daten
-Public KA_sheet As Worksheet  'Liste aller Auftraege zur Auswahl
-Public print_sheet As Worksheet 'Sheet formatiertes Sheet zum Drucken
-Public status_sheet As Worksheet 'Enthaelt Daten, die gemerkt werden sollen
-Public UI_sheet As Worksheet 'Enthaelt User-Inteface
-Public lines_per_page
-Public KA_Id_max 'groesste eingelesene KA Id
-Public KA_Id_min 'kleinste eingelesene KA Id
-Public KA_Id_liste() As Long 'Alle zu druckenden KA Id
-Public UNIPPS_dbr As DB_Reader
-Public Sub set_globals()
-    'Excel laden, falls nicht schon offen
-    'Set data_wb = Oeffne_Excel(xls_auftragsbestand_file, xls_auftragsbestand_dir)
-    Set data_wb = Workbooks(xls_auftragsbestand_file)
-    Set main_sheet = data_wb.Worksheets(xls_auftragsbestand_main_sheet)
-    Set KA_sheet = data_wb.Worksheets(xls_auftragsbestand_KA_sheet)
-    Set print_sheet = data_wb.Worksheets(xls_print_sheet)
-    Set status_sheet = data_wb.Worksheets(xls_status_sheet)
-    Set UI_sheet = data_wb.Worksheets(xls_ui_sheet)
-    lines_per_page = (max_lines + 2) * Anz_Etik_vert
-    pump_mode = False
+'Hierdrin nur allgemeingueltige XML-Tools
+'########################################################################################
+Private cls_xmlDoc As DOMDocument60
+Private cls_xmlRoot As IXMLDOMElement
+Public Property Get xmlRoot() As IXMLDOMElement
+    Set xmlRoot = cls_xmlDoc.DocumentElement
+End Property
+Public Property Get xmldoc() As DOMDocument60
+    Set xmldoc = cls_xmlDoc
+End Property
+Public Sub open_Doc(ByVal XmlDateiMitPfad As String)
+   Set cls_xmlDoc = New DOMDocument60
+   cls_xmlDoc.async = False
+   cls_xmlDoc.validateOnParse = True                    ' Auf Fehler prüfen
+   cls_xmlDoc.Load (XmlDateiMitPfad)                    ' XML-Datei laden
+   If cls_xmlDoc.Load(XmlDateiMitPfad) = False Then
+      MsgBox "XML-Datei: '" & XmlDateiMitPfad & "' wurde nicht gefunden"
+      End
+   ElseIf cls_xmlDoc.parseError = True Then
+      MsgBox "XML-Datei: '" & XmlDateiMitPfad & "' hat fehlerhaften Aufbau (ist nicht 'wohlgeformt')"
+      End
+   End If
+   cls_xmlDoc.setProperty "SelectionLanguage", "XPath"  ' Suchen soll mittels XPath erfolgen
 End Sub
-
-
-================================================================================
-vbmodule: Menues
-================================================================================
-'alle Aktionen, die beim Oeffnen der Mappe erfolgen sollen
-Public Sub Workbook_Open_handler()
-   'Neue FA lesen, vorhandene aktualisieren
-    main_Update_Auftragsbestand
+Public Sub create_Doc()
+    Dim xmlRoot As IXMLDOMElement
+   Set cls_xmlDoc = New DOMDocument60
+ cls_xmlDoc.appendChild        cls_xmlDoc.createProcessingInstruction("xml", "version=""1.0"" encoding=""ISO-8859-1""")
+   Set cls_xmlRoot = cls_xmlDoc.createElement("root")
+   cls_xmlDoc.appendChild cls_xmlRoot
 End Sub
-'Formatiere Auswahl von AB's und drucke diese
-Public Sub main_Print_multi()
-    'groben Bereich auswaehlen
-    Vorauswahl_frm.Show
-    If Not Vorauswahl_frm.ok_pressed Then
-        Exit Sub
-    End If
-    ' alle ID'd der AB's holen die in diesem Bereich liegen
-    ' und die im Datenbestand (Sheet KA) sind
-    get_list_of_ab_ids Vorauswahl_frm.von_textbox, Vorauswahl_frm.bis_textbox
-    'Teilmenge per Klick auswaehlen und in globale Liste uebertragen
-    multi_Auswahl_frm.Show
-    If Not multi_Auswahl_frm.ok_pressed Then
-        Exit Sub
-    End If
-    Info_frm.Meldung = "Etwas Geduld: Formatiere Daten"
-    Info_frm.Show
-    Info_frm.Repaint
-    DoEvents
-    'Uebertrage Rohdaten auf print-sheet
-    transfer_selected_ABs
-    Info_frm.Hide
-    'Action
-    'print_it
-    print_preview
+Public Sub save_Doc(file_name$)
+   cls_xmlDoc.Save file_name
 End Sub
-'Formatiere Auswahl von AB's und drucke diese
-Public Sub main_Print_single()
-    Dim ab_id As Long
-    set_globals
-    'KA Bereich auswaehlen
-    If testmode Then
-        ab_id = test_ab
+'Suche einen Knoten ueber XPATH unterhalb des Knotens base_node
+Public Function get_attribute_value(base_node As IXMLDOMElement, att_name$)
+    Dim msg$
+    Dim attribut As IXMLDOMAttribute
+    Set attribut = base_node.Attributes.getNamedItem(att_name)
+    If attribut Is Nothing Then
+        msg = "Fehlerhafte Struktur" + vbCrLf + "Attribut: <" + att_name + "> nicht gefunden in:"
+        msg = msg + vbCrLf + base_node.XML
+        MsgBox (msg)
     Else
-        Auswahl_frm.Show
-        If Not Auswahl_frm.ok_pressed Then
-            Exit Sub
-        End If
-        ab_id = Auswahl_frm.id_textbox
+        get_attribute_value = attribut.NodeValue
     End If
-    Info_frm.Meldung = "Etwas Geduld: Formatiere Daten"
-    Info_frm.Show
-    Info_frm.Repaint
-    DoEvents
-    'Suche 1 AB in main_sheet und uebertrage nach print sheet
-    'startzeile wird nur gebraucht, wenn mehrere KA zusammen gedruckt werden (main_Print_multi)
-    print_sheet.Cells.ClearContents
-    out_row = 1
-    transfer_single_AB start_row:=2, id:=ab_id
-    Info_frm.Hide
-    'Action
-    'print_it
-    print_preview
+End Function
+'Suche einen Knoten ueber XPATH unterhalb des Knotens base_node
+Public Function search_for_node(base_node As IXMLDOMElement, xpathsearch_str$) As IXMLDOMElement
+   Dim xml_node As IXMLDOMElement
+   Set xml_node = base_node.SelectSingleNode(xpathsearch_str)
+   If xml_node Is Nothing Then
+        MsgBox "Knoten <" & xpathsearch_str & "> nicht gefunden. Vermutlich falsche XML-Struktur"
+        End
+   Else
+        Set search_for_node = xml_node
+   End If
+End Function
+'Suche alle Knoten ueber XPATH unterhalb des Knotens base_node
+Public Function search_for_nodes(base_node As IXMLDOMElement, xpathsearch_str$) As IXMLDOMNodeList
+   Dim xml_nodes As IXMLDOMNodeList
+   Set xml_nodes = base_node.SelectNodes(xpathsearch_str)
+   If xml_nodes.Length = 0 Then
+        MsgBox "Knoten <" & xpathsearch_str & "> nicht gefunden. Vermutlich falsche XML-Struktur"
+        End
+   Else
+        Set search_for_nodes = xml_nodes
+   End If
+End Function
+
+
+================================================================================
+vbmodule: XL_Tools
+================================================================================
+'###############################################################################
+' Modul enthält allgemeingültige, oft gebrauchte Excel-Routinen
+'###############################################################################
+Option Explicit
+Sub Abbruchmeldung(msg$)
+ MsgBox msg & vbCrLf & vbCrLf & "fehler: " & Err.Description               & vbCrLf & vbCrLf & "Programm wird abgebrochen"
+    End
 End Sub
-Public Sub main_Update_Auftragsbestand()
-On Error GoTo Fehler
-'Mappen laden und vorbereiten
-Application.StatusBar = "Starte Makro " & Format(Now(), "HH:mm:ss")
-set_globals
-Status_lesen
-Import_frm.importieren = True 'Flag setzen damit do while nicht sofort abweist
-Do While Import_frm.importieren
-    'Abfragen ob neu eingelesen werden soll
-    If testmode Then
-        Import_frm.tage_zurueck = 0 'dummy-wert
+'Excel oeffnen
+'Pfad ohne \ am Ende
+Function Oeffne_Excel(name$, Pfad$) As Workbook
+    Dim uninteressant
+    Set Oeffne_Excel = Nothing
+    'Test ob Workbook schon offen
+    On Error Resume Next
+    uninteressant = Workbooks(name).FullName
+    'If Workbooks(Name_Daten_Excel_File) Is Nothing Then
+    If Err.Number = 9 Then
+        'Noch nicht offen
+        On Error GoTo 0
+        Set Oeffne_Excel = Workbooks.Open(Filename:=Pfad & "\" & name)
     Else
-        Import_frm.Show
+        Set Oeffne_Excel = Workbooks(name)
     End If
-    If Not Import_frm.importieren Then
-        'Exit Sub
-        GoTo Aufraeumen
+    On Error GoTo 0
+End Function
+'Dateiauswahl
+Function Waehle_Datei(Optional msg$ = "", Optional path$ = "", Optional filter$ = "") As Variant
+    Dim fileToImport
+    Dim old_dir$
+    ' Aufforderung
+    If Not msg = "" Then
+        MsgBox msg
     End If
-    Info_frm.Meldung = "Etwas Geduld: Lese Daten aus UNIPPS"
-    Info_frm.Show
-    Info_frm.Repaint
-    DoEvents
-    'globales Db_reader Objekt anlegen
-    Set UNIPPS_dbr = New_DB_Reader
-    UNIPPS_dbr.Open_Informix_Connection
-    'Ersatz-Kundenaufträge seit x Tagen in Excel KA_imp_sheet einlesen
-    Application.StatusBar = "UNIPPS wird gelesen " & Format(Now(), "HH:mm:ss")
-    Dim import_start As Date
-    import_start = Now() - Import_frm.tage_zurueck
-    'Hole Ersatz_KA aus UNIPPS
-    'Nur ID'S in Sheet KA
-    get_ka_ID_only_from_unipps import_start
-    'Alle noetigen Daten in Sheet Import
-    get_ka_with_data_from_unipps import_start
-    fuege_Teile_Info_an
-    'Neues Blatt fuer Print-Format anlegen
-    'Set print_sheet = add_sheet("Print")
-    prog_status.letzter_Import = Now()
-    Status_speichern
-    Info_frm.Hide
-    If testmode Then
-        GoTo Aufraeumen
+    If filter = "" Then
+        filter = "Alles (*.*), *.*"
     End If
-Loop
-Aufraeumen:
-    On Error Resume Next
-    Exit Sub
-Fehler:
-    MsgBox "Abbruch wg Fehler: " & Err.Description
-    Resume Aufraeumen
-End Sub
-Public Sub main_Pumpenauftrag_lesen_und_drucken()
-Dim ab_id As Long
-On Error GoTo Fehler
-'Mappen laden und vorbereiten
-Application.StatusBar = "Starte Makro " & Format(Now(), "HH:mm:ss")
-set_globals
-Status_lesen
-'ID des Auftrages einlesen
-Auswahl_frm.Show
-If Not Auswahl_frm.ok_pressed Then
-    Exit Sub
-End If
-ab_id = Auswahl_frm.id_textbox
-'globales Db_reader Objekt anlegen
-Set UNIPPS_dbr = New_DB_Reader
-UNIPPS_dbr.Open_Informix_Connection
-'Ersatz-Kundenaufträge seit x Tagen in Excel KA_imp_sheet einlesen
-Application.StatusBar = "UNIPPS wird gelesen " & Format(Now(), "HH:mm:ss")
-'Hole Ersatz_KA aus UNIPPS
-'Nur ID'S in Sheet KA
-ab_id = test_ab
-get_ka_ID_only_from_unipps_per_ID ab_id
-'Alle noetigen Daten in Sheet Import
-get_ka_with_data_from_unipps_per_ID ab_id
-fuege_Teile_Info_an
-prog_status.letzter_Import = Now()
-Status_speichern
-'--------- Drucken
-'Suche 1 AB in main_sheet und uebertrage nach print sheet
-'startzeile wird nur gebraucht, wenn mehrere KA zusammen gedruckt werden (main_Print_multi)
-print_sheet.Cells.ClearContents
-out_row = 1
-transfer_single_AB start_row:=2, id:=ab_id
-'Action
-print_preview
-Aufraeumen:
-    On Error Resume Next
-    Exit Sub
-Fehler:
-    MsgBox "Abbruch wg Fehler: " & Err.Description
-    Resume Aufraeumen
-End Sub
-Public Sub main_Update_format()
-    format_print_sheet
-End Sub
-
-
-================================================================================
-vbmodule: Spielwiese
-================================================================================
-Sub test()
-    Dim new_sheet As Worksheet
-    Debug.Print Now
-    'set_globals
-    'Status_lesen
-    main_Update_Auftragsbestand
-    'Set new_sheet = add_sheet("re")
-    'del_sheet new_sheet
-    Debug.Print Now
-End Sub
-
-
-================================================================================
-vbmodule: Auftragsbestand
-================================================================================
-    Option Explicit
-    Public Function get_min_KA_Id()
-        get_min_KA_Id = KA_sheet.Range("A2")
-    End Function
-    Public Function get_min_KA_date()
-        get_min_KA_date = KA_sheet.Range("B2")
-    End Function
-    Public Function get_max_KA_Id()
-        Dim last_row As Long
-        last_row = hole_zeilen(KA_sheet.Range("A1"))
-        get_max_KA_Id = KA_sheet.Cells(last_row, 1)
-    End Function
-    Public Function get_max_KA_date()
-        Dim last_row As Long
-        last_row = hole_zeilen(KA_sheet.Range("A1"))
-        get_max_KA_date = KA_sheet.Cells(last_row, 2)
-    End Function
-    Public Function translate(text_id, sprache)
-        Dim text(10) As String
-        Select Case sprache
-            Case "D"
-                text(1) = "Type/Abmessung:": text(2) = "Werkstoff:": text(3) = "Spezifikation:"
-                text(4) = "K.Ident-Nr:": text(5) = "K.Ref-Nr:": text(6) = "K.Zchn-Nr:"
-            Case "E"
-                text(1) = "type/dimensions:": text(2) = "material:": text(3) = "spezification:"
-                text(4) = "Cust.No.:": text(5) = "Cust.ref.No.": text(6) = "Cust.draw.No."
-            Case "F"
-                text(1) = "type/dimensions:": text(2) = "matériaux:": text(3) = "spezification:"
-                text(4) = "No du client:": text(5) = "": text(6) = ""
-            Case Else
-                MsgBox "Sprache <" & sprache & "> ist noch nicht programmiert."
-        End Select
-        translate = text(text_id)
-    End Function
-    'Checkt ob KA_ID schon in Excel vorhanden
-    Public Function id_in_excel(id_2_searchfor As Long)
-        Dim last_row As Long, in_row As Long, id As Long
-        last_row = hole_zeilen(KA_sheet.Range("A1"))
-        in_row = 2
-        Dim found As Boolean
-        found = False
-        With KA_sheet.Range("A1")
-            Do While in_row <= last_row
-                id = CLng(Trim(.Cells(in_row, 1).Value))
-                If id = id_2_searchfor Then
-                    found = True
-                    Exit Do
-                End If
-                in_row = in_row + 1  'Naechster datensatz
-            Loop
-        End With
-        If Not found Then
- MsgBox "Ihr Auftrag " & id_2_searchfor & " konnte nicht gefunden werden." & vbCrLf & vbCrLf                   & "Evtl. Daten erneut einlesen."
-        End If
-    End Function
-    'Holt alle ID'S die innerhalb des Bereiches von min_id bis max_id liegen in globale Liste
-    Public Sub get_list_of_ab_ids(min_id As Long, max_id As Long)
-        Dim last_row As Long, in_row As Long, id As Long
-        last_row = hole_zeilen(KA_sheet.Range("A1"))
-        in_row = 2
-        Dim anz_ids%
-        anz_ids = 0
-        With KA_sheet.Range("A1")
-            Do While in_row <= last_row
-                id = CLng(Trim(.Cells(in_row, 1).Value))
-                If id > max_id Then
-                    Exit Do
-                ElseIf id >= min_id Then
-                    'store it
-                    ReDim Preserve KA_Id_liste(anz_ids)
-                    KA_Id_liste(anz_ids) = id
-                    anz_ids = anz_ids + 1
-                End If
-                in_row = in_row + 1  'Naechster datensatz
-            Loop
-        End With
-    End Sub
-    'Hole Kundeaufträge (nur ID'S) aus UNIPPS per Datumsfilter
-    'Bezeichnung beginnt mit Ersatz; Status <4
-    Public Sub get_ka_ID_only_from_unipps(start_datum As Date)
-        Dim sql$
-        sql = sql_ersatz_Etiketten_nur_ID(start_datum)
-        UNIPPS_dbr.open_rs (sql)
-        If UNIPPS_dbr.Connection.Errors.Count <> 0 Then
-            abbruchmeldung "UNIPPS-Daten konnten nicht gelesen werden."
-        End If
-        'Daten in sheet ablegen
-        UNIPPS_dbr.recordset_2_sheet KA_sheet.Range("A1"), Clear:=True, Header:=True
-    End Sub
-    'Hole einen Kundeauftrag (nur ID und anlagedatum) aus UNIPPS per ID
-    'Kein Filter auf Ersatz oder Status
-    Public Sub get_ka_ID_only_from_unipps_per_ID(auftragkopf_ident_nr As Long)
-        Dim sql$
-        sql = sql_ersatz_Etiketten_nur_ID_per_ID(auftragkopf_ident_nr)
-        UNIPPS_dbr.open_rs (sql)
-        If UNIPPS_dbr.Connection.Errors.Count <> 0 Then
-            abbruchmeldung "UNIPPS-Daten konnten nicht gelesen werden."
-        End If
-        'Daten in sheet ablegen
-        UNIPPS_dbr.recordset_2_sheet KA_sheet.Range("A1"), Clear:=True, Header:=True
-    End Sub
-    'Hole Kundeaufträge mit relevanten Infos aus UNIPPS per Datumsfilter
-    'Bezeichnung beginnt mit Ersatz; Status <4
-    Public Sub get_ka_with_data_from_unipps(start_datum As Date)
-        Dim sql$
-        sql = sql_ersatz_Etiketten(start_datum)
-        UNIPPS_dbr.open_rs (sql)
-        If UNIPPS_dbr.Connection.Errors.Count <> 0 Then
-            abbruchmeldung "UNIPPS-Daten konnten nicht gelesen werden."
-        End If
-        'Altbestand loeschen
-        main_sheet.Cells.ClearContents
-        'Daten in sheet ablegen
-        UNIPPS_dbr.recordset_2_sheet main_sheet.Range("A1"), Clear:=True, Header:=True
-    End Sub
-    'Hole einen Kundeauftrag mit relevanten Infos aus UNIPPS per ID
-    'Kein Filter auf Ersatz oder Status
-    Public Sub get_ka_with_data_from_unipps_per_ID(auftragkopf_ident_nr As Long)
-        Dim sql$
-        sql = sql_ersatz_Etiketten_per_ID(auftragkopf_ident_nr)
-        UNIPPS_dbr.open_rs (sql)
-        If UNIPPS_dbr.Connection.Errors.Count <> 0 Then
-            abbruchmeldung "UNIPPS-Daten konnten nicht gelesen werden."
-        End If
-        'Altbestand loeschen
-        main_sheet.Cells.ClearContents
-        'Daten in sheet ablegen
-        UNIPPS_dbr.recordset_2_sheet main_sheet.Range("A1"), Clear:=True, Header:=True
-    End Sub
-    'Erzeuggt SQL zum Lesen von Teileinfo
-    'SELECT unipps_teil_bez.ident_nr1, unipps_teil_bez.sprache, unipps_teil_bez.art, unipps_teil_bez.v, unipps_teil_bez.pos_nr AS zeile, unipps_teil_bez.text
-    'FROM unipps_teil_bez WHERE (((unipps_teil_bez.ident_nr1) = "472I30140ISA019") And ((unipps_teil_bez.sprache) = "D")
-    'And ((unipps_teil_bez.art) = 1 Or (unipps_teil_bez.art) = 3) And ((unipps_teil_bez.v) = 1)) ORDER BY unipps_teil_bez.pos_nr;
-    Private Function teileinfo(tg_nr, sprache, art) As Recordset
-        Dim sql$
- sql = "SELECT text FROM teil_bez " & "WHERE ident_nr1 = """ & tg_nr & """ And sprache = """ & sprache & """ And art=" & art & "  and v=1 "              & "ORDER BY pos_nr;"
-        Set teileinfo = UNIPPS_dbr.open_rs(sql)
-        If UNIPPS_dbr.Connection.Errors.Count <> 0 Then
-            abbruchmeldung "UNIPPS-Daten konnten nicht gelesen werden."
-        End If
-    End Function
-    'Loop über Import-Tabelle und zu jeder Pos Teile-Infos dazu
-    Public Sub fuege_Teile_Info_an()
-        Dim col%, row As Long, last_row As Long
-        Dim liefer_tag As Date
-        Dim sprache$, tg_nr$, sql$
-        Dim myrs As Recordset
-        Dim art%
-        Dim msg$
-        last_row = hole_zeilen(main_sheet.Range("A1")) + 1
-        'Suche alle Zeilen
-        'start_col_teileinfo = 12
-        With main_sheet.Range("A1")
-            For row = 2 To last_row - 1
-                sprache = Trim(.Cells(row, 4).Value)
-                tg_nr = Trim(.Cells(row, 6).Value)
-                art = 1
-                'Hole Daten aus Tabelle "unipps_teil_bez" mit Parameter Sprache,tg_nr und art
-                'hier art 1 => ergibt Hauptbezeichnung des Teiles
-                Set myrs = teileinfo(tg_nr, sprache, art)
-                If myrs.RecordCount <> 1 And InStr(tg_nr, "PP") <> 1 Then
-                    msg = "Ungültige Daten erkannt im Modul Auftragsbestand." & vbCrLf
-                    msg = msg & "Position " & tg_nr & " besitzt " & myrs.RecordCount & " Teilebezeichnungen."
-                    abbruchmeldung msg
-            ElseIf myrs.RecordCount = 1 Then
-                myrs.MoveFirst
-                .Cells(row, start_col_teileinfo).Value = myrs.Fields("text")
-            End If
-            myrs.Close
-            art = 3
-            'hier art 3 => ergibt weitere "freie" Beschreibungstexte
-            Set myrs = teileinfo(tg_nr, sprache, art)
-            If myrs.RecordCount > 0 Then
-                myrs.MoveFirst
-                col = start_col_teileinfo + 1
-                Do While Not myrs.EOF
-                    .Cells(row, col).Value = myrs.Fields("text")
-                    col = col + 1
-                    myrs.MoveNext
-                Loop
-            End If
+    If Not path = "" Then
+        old_dir = CurDir
+        ChDrive Left(path, 1)
+        ChDir path
+    End If
+    fileToImport = Application.GetOpenFilename(filter)
+    'zurückwechseln
+    If Not path = "" Then
+        ChDrive Left(old_dir, 1)
+        ChDir old_dir
+        Debug.Print CurDir
+    End If
+    If fileToImport = False Then
+        MsgBox "Nix gewählt. Programmende"
+        End
+    End If
+    Waehle_Datei = fileToImport
+End Function
+'Schreibe Header zu einer Tabelle aus CSV-String headertxt
+Sub write_header(mysheet As Worksheet, start_cell, headertxt)
+    Dim name
+    Dim header_arr, i%
+    header_arr = Split(headertxt, ";")
+    i = 0
+    With mysheet.Range(start_cell)
+        For Each name In header_arr
+            .Offset(0, i) = name
+            i = i + 1
         Next
     End With
 End Sub
+'Zählt Zeilen einer Tabelle bei Spalte 1 von myrange
+Function hole_zeilen(myrange As Range) As Long
+    Dim mysheet As Worksheet
+    Dim col As Long
+    Set mysheet = myrange.Parent
+    'Debug.Print mysheet.Name
+    col = myrange.Column
+    'myrange.CurrentRegion.Select
+    'alt
+    hole_zeilen = myrange.End(xlDown).Row
+    'Neu: erst auf letzte Zeile des sheets im Range gehen => von unten suchen
+    hole_zeilen = mysheet.Cells(mysheet.Rows.count, col).End(xlUp).Row
+    'test ob Bereich leer, d.h. Tabellenende wird erreicht und dieses ist leer
+    If hole_zeilen = mysheet.Rows.count And IsEmpty(mysheet.Cells(hole_zeilen, col)) Then
+        hole_zeilen = myrange.Row
+    End If
+    'Sucht alle angrenzenden Zellen,nicht nur Spalte 1
+    'hole_zeilen = myrange.CurrentRegion.Rows.Count
+End Function
+'Test ob Datei existiert
+Function FileExists(ByVal File As String) As Boolean
+    On Error Resume Next
+    FileExists = False
+    FileExists = Dir(File) <> ""
+End Function
 
 
 ================================================================================
-vbmodule: Formatieren
+vbmodule: QM2XL_Tools
+================================================================================
+'###############################################################################
+' Modul enthält Tools zum Füllen von Excel aus UNIPPS oder Quote-Master
+'###############################################################################
+Option Explicit
+
+
+================================================================================
+vbclass: Projekt_record
 ================================================================================
 Option Explicit
-'Wieviele Seiten sollen formatiert werden ?
-Const pages_2_format = 100
-'Sollen zum Testen Linien ueber und unter den Etiketten gedruckt werden ?
-'Const withlines = True
-Const withlines = False
-'Alle Formate erzeugen
-Public Sub format_print_sheet()
-    set_globals
-    print_sheet.Cells.ClearFormats
-    format_print_sheet_common
-    format_print_sheet_page_breaks
-    format_print_sheet_columns
-    format_print_sheet_rows
-    copy_page_format 'Alles auf Folgeseiten kopieren
-    'print_test_page
+Private cls_record As New record
+Private cls_parent As QM_XML_Doc
+Public Sub fill_from_XML_Doc(parent_QM_XML_Doc As QM_XML_Doc)
+   Dim xml_Projektrecord As IXMLDOMElement
+   Dim myXML_Toolbox As XML_Toolbox
+   Set cls_parent = parent_QM_XML_Doc
+   Set myXML_Toolbox = cls_parent.XML_Toolbox
+   'Suche den Knoten "ProjektRecord" auf XML-Ebene 2
+   Set xml_Projektrecord = myXML_Toolbox.search_for_node(cls_parent.xmlRoot, "/*/ProjektRecord")
+   If xml_Projektrecord Is Nothing Then
+        Err.Raise Number:=vbObjectError + 1, Description:="Knoten </*/ProjektRecord> nicht gefunden. Vermutlich falsche XML-Struktur"
+   End If
+   'Hole Daten
+   cls_record.fill_from_XML_Doc xml_Projektrecord
 End Sub
-'Print_Sheet Spalten formatieren
-Public Sub format_print_sheet_columns()
-    'Spaltenbreiten
-    'Const w1 = 0.1:   Const w2 = 4:    Const w3 = 11.86:    Const w4 = 37
-    Const w1 = 4:   Const w2 = 4:    Const w3 = 11.86:    Const w4 = 32
-    Const w5 = 1:     Const w6 = 25
-    set_globals
-    Application.StatusBar = "Formatiere Spalten"
-    DoEvents
-    'Spaltenbreiten
-    print_sheet.Columns(1).ColumnWidth = w1
-    print_sheet.Columns(2).ColumnWidth = w2
-    print_sheet.Columns(3).ColumnWidth = w3
-    print_sheet.Columns(4).ColumnWidth = w4
-    print_sheet.Columns(5).ColumnWidth = w5
-    print_sheet.Columns(6).ColumnWidth = w2
-    print_sheet.Columns(7).ColumnWidth = w3
-    print_sheet.Columns(8).ColumnWidth = w6
+'testausgabe
+Public Sub testprint2sheet(Optional myrange As Range)
+    'record in sheet ausgeben
+    cls_record.testprint2sheet "Projektdaten", myrange
 End Sub
-'Standard-Formate Fuer ganzes Blatt
-Public Sub format_print_sheet_common()
-    Dim row As Long
-    Dim SRO, SRU As Double
-    set_globals
-    Application.StatusBar = "Formatiere Allgemeines"
-    DoEvents
-    print_sheet.Cells.Font.name = "Arial"
-    print_sheet.Cells.Font.Size = 8
-    print_sheet.Cells.VerticalAlignment = xlCenter
-    print_sheet.Cells.HorizontalAlignment = xlLeft
-    If UCase(label_type) = "A" Then
-        'Etiketten gehen ohne Rand ueber ganze Seite
-        'Wert um ER_vert_min mm verringern um Platz fuer eine Excel-Leerzeile zu schaffen,
-        'die immer vom Programm erwartet wird. Das Etikett wird dadurch besser genutzt
-        SRO = Seitenrand_oben - ER_v_oben_vor
-        SRU = Seitenrand_unten - ER_v_unten_nach
-    ElseIf UCase(label_type) = "B" Then
-        SRO = Seitenrand_oben
-        SRU = Seitenrand_unten
-    Else
-        MsgBox "nicht programmierter label_type <" & label_type & "> (ungleich A oder B)"
-        End
-    End If
-    SRO = Application.CentimetersToPoints(Seitenrand_oben / 10)
-    SRU = Application.CentimetersToPoints(Seitenrand_unten / 10)
-    print_sheet.PageSetup.TopMargin = SRO
-    print_sheet.PageSetup.BottomMargin = SRU
-End Sub
-'Seitenumbrueche
-Public Sub format_print_sheet_page_breaks()
-    Dim row As Long, page%
-    set_globals
-    Application.StatusBar = "Formatiere Seitenumbrüche"
-    DoEvents
-    print_sheet.ResetAllPageBreaks
-    row = lines_per_page
-    For page = 1 To pages_2_format
-        print_sheet.HPageBreaks.Add Before:=print_sheet.Rows(row + 1)
-        row = row + lines_per_page
-    Next
-    'For row = lines_per_page To 100 * lines_per_page Step lines_per_page
-    '    print_sheet.HPageBreaks.Add Before:=print_sheet.Rows(row + 1)
-    'Next
-End Sub
-'Drucke 1 Seite vom Printsheet
-Public Sub print_test_page()
-    ExecuteExcel4Macro "PRINT(2,1,1,1,,,,,,,,2,,,TRUE,,FALSE)"
-End Sub
-'Zeilen formatieren
-Public Sub format_rows_for_one_label(row As Long, ER_vor, ER_nach)
-    Dim i
-    Application.StatusBar = "Formatiere Musterseite Zeile " & row
-    DoEvents
-    print_sheet.Rows(row).RowHeight = ER_vor 'Leerzeile vor Etikett
-    row = row + 1
-    If withlines Then
-        print_sheet.Rows(row).Borders(xlEdgeTop).LineStyle = xlContinuous
-        print_sheet.Rows(row).Borders(xlEdgeTop).Weight = xlThin
-    End If
-    print_sheet.Rows(row).RowHeight = h_abnr  'Ab-Nr
-    row = row + 1
-    Application.StatusBar = "Formatiere Musterseite Zeile " & row
-    DoEvents
-    print_sheet.Rows(row).RowHeight = h_ueb_pos  'Ueberschrift
-    print_sheet.Rows(row).Font.Size = 11
-    print_sheet.Rows(row).Font.Bold = True
-    row = row + 1
-    print_sheet.Rows(row).RowHeight = h_ueb_bez  'Zeile 2
-    print_sheet.Rows(row).Font.Size = 11
-    print_sheet.Rows(row).Font.Bold = True
-    row = row + 1
-    Application.StatusBar = "Formatiere Musterseite Zeile " & row
-    DoEvents
-    row = row + max_lines - 3 'obige drei Nutzzeilen gehen von max_lines ab
-    If withlines Then
-        print_sheet.Rows(row).Borders(xlEdgeBottom).LineStyle = xlContinuous
-        print_sheet.Rows(row).Borders(xlEdgeBottom).Weight = xlThin
-    End If
-    print_sheet.Rows(row).RowHeight = ER_nach 'Leerzeile nach Etikett
-    row = row + 1
-    Application.StatusBar = "Formatiere Musterseite Zeile " & row
-    DoEvents
-End Sub
-Public Sub format_print_sheet_rows()
-    Dim row As Long, i%, page%
-    row = 1
-    Application.ScreenUpdating = False
-    'standardhoehe fuer alle Zeilen
-    print_sheet.Cells.RowHeight = h_standard
-    For page = 1 To 1 'pages_2_format
-        Application.StatusBar = "Formatiere Zeile " & row '& " von " & last_row
-        If UCase(label_type) = "A" Then
-          'Etiketten gehen ohne Rand ueber ganze Seite
-          format_rows_for_one_label row, ER_v_oben_vor, ER_v_oben_nach
-          For i = 1 To Anz_Etik_vert - 2
-            format_rows_for_one_label row, ER_v_mitte_vor, ER_v_mitte_nach
-          Next
-          format_rows_for_one_label row, ER_v_unten_vor, ER_v_unten_nach
-        ElseIf UCase(label_type) = "B" Then
-          For i = 1 To Anz_Etik_vert
-            format_rows_for_one_label row, ER_v_mitte_vor, ER_v_mitte_nach
-          Next
-        Else
-            MsgBox "nicht programmierter label_type <" & label_type & "> (ungleich A oder B)"
-            End
-        End If
-    Next
-    Application.ScreenUpdating = True
-End Sub
-'Zeilen formatieren
-' ################## Kann sehr lange dauern ######################
-Public Sub xxxformat_print_sheet_rows()
-    Dim last_row As Long, row As Long
-    Dim i%
-    Dim format_leer As Boolean, format_header As Boolean, format_standard As Boolean, with_print As Boolean
-    set_globals
-    'Zeilenhoehen
-    Const h_leer_1 = 9: Const h_leer_last = 2
-    Const h_leer = 17: Const h_abnr = 11: Const h_ueb_pos = 15
-    Const h_ueb_bez = 14:    Const h_standard = 12.3
-    'Was wird gemacht ?
-    format_leer = True: format_header = True: format_standard = True
-    with_print = False
-    'generell so viele Etiketten formatieren, wie Zeilen in Import-Sheet, auch bei zweispaltig
-    'last_row = hole_zeilen(main_sheet.Range("A1"))
-    '100 Seiten formatieren: datt dauert
-    last_row = lines_per_page * 100 + 2
-    last_row = 20
-    row = 1
-    Application.ScreenUpdating = False
-    Application.StatusBar = "Formatiere Zeile " & row & " von " & last_row
-    Do While row < last_row
-        DoEvents
-        '''''alt
-        If False Then
-            If row Mod lines_per_page = 1 Then
-                print_sheet.Rows(row).RowHeight = h_leer_1 'Leerzeile
-            Else
-                print_sheet.Rows(row).RowHeight = h_leer 'Leerzeile
-            End If
-        End If
-        If format_header Then
-            print_sheet.Rows(row).RowHeight = h_abnr  'Ab-Nr
-            print_sheet.Rows(row + 1).RowHeight = h_ueb_pos 'Ueberschrift
-            print_sheet.Rows(row + 1).Font.Size = 10
-            print_sheet.Rows(row + 1).Font.Bold = True
-            print_sheet.Rows(row + 2).RowHeight = h_ueb_bez 'Zeile 2
-            print_sheet.Rows(row + 2).Font.Size = 10
-            print_sheet.Rows(row + 2).Font.Bold = True
-        End If
-        If format_standard Then
-            For i = 3 To max_lines
-                print_sheet.Rows(row + i).RowHeight = h_standard 'Zeile 3 ...
-            Next i
-        End If
-        '''''''row = row + max_lines + 1
-        row = row + max_lines
-        If format_leer Then
-            If row Mod lines_per_page = 0 Then
-                print_sheet.Rows(row).RowHeight = h_leer_last 'Leerzeile
-            ElseIf row Mod lines_per_page = 17 Then
-                print_sheet.Rows(row).RowHeight = h_leer_1 'Leerzeile
-            Else
-                print_sheet.Rows(row).RowHeight = h_leer 'Leerzeile
-            End If
-        End If
-        row = row + 1
-        Application.StatusBar = "Formatiere Zeile " & row & " von " & last_row
-    Loop
-    Application.ScreenUpdating = True
-End Sub
-Public Sub copy_page_format()
-    Dim ori_seite, ziel_seite As Range
-    Dim page%
-    set_globals
-    Set ori_seite = Range(print_sheet.Rows(1), print_sheet.Rows(lines_per_page))
-    Application.ScreenUpdating = False
-    ori_seite.Copy
-    For page = 2 To pages_2_format
-        Application.StatusBar = "Formatiere Seite " & page & " von " & pages_2_format
-        Set ziel_seite = ori_seite.Offset((page - 1) * lines_per_page, 0)
-        ziel_seite.PasteSpecial Paste:=xlPasteFormats
-    Next page
-    Application.CutCopyMode = False
-    Application.ScreenUpdating = True
-    Application.StatusBar = pages_2_format & " Seiten druckbereit formatiert"
-End Sub
+Public Function value(key$) As String
+    value = cls_record.value(key$)
+End Function
+Public Function items() As Variant
+    items = cls_record.items()
+End Function
+Public Function keys() As Variant
+    keys = cls_record.keys()
+End Function
+'Public Property Get record() As record
+'    Set record = cls_record
+'End Property
 
 
 ================================================================================
-vbmodule: Tools
+vbclass: Pos_unterpos_records
 ================================================================================
 Option Explicit
-Function add_sheet(name) As Worksheet
-    Set data_wb = Workbooks(xls_auftragsbestand_file)
-    Set add_sheet = data_wb.Sheets.Add
-    add_sheet.name = name
+'Hole alle Daten einer Unterposition mit zugehöriger übergeordneter Position
+'Unterposition(en) werden mit search$ bei "init" gesucht
+'mit fill_from_XML_Doc(id%) wird immer eine Upos geladen
+Private cls_UPos_record As New record
+Private cls_Pos_record As New record
+Private cls_pos_upos_nodes As IXMLDOMNodeList  'alle Unterknoten die gefunden wurden
+Private cls_parent As QM_XML_Doc
+'Suche Unterposition(en)  mit search$
+Sub init(myQM_XML_Doc As QM_XML_Doc, search$)
+    Dim xml_node As IXMLDOMElement
+    Set cls_parent = myQM_XML_Doc
+    Set cls_pos_upos_nodes = cls_parent.XML_Toolbox.search_for_nodes(cls_parent.xmlRoot, search)
+End Sub
+'Hole alle Datenfelder einer Unterposition (über Index id) in record-Objekt
+'Sucht  zugehörige übergeordneter Position und holt ebenso in record
+Public Sub make_record_current(id%)
+    Dim Position As IXMLDOMElement, Unterposition As IXMLDOMElement
+    'Im XML eine Ebene hoch
+    Set Unterposition = cls_pos_upos_nodes(id).ParentNode
+    'Lade alle daten des XML-Knotens in record-objekt
+    cls_UPos_record.fill_from_XML_Doc Unterposition
+    'Noch mal hoch im XML und Vorgänger holen => zugehoeriger Positionsrecord
+    Set Position = Unterposition.ParentNode.PreviousSibling
+    cls_Pos_record.fill_from_XML_Doc Position
+End Sub
+'testausgabe
+Public Sub testprint_cur_record2sheet(Optional myrange As Range)
+    'Position ausgeben
+    cls_Pos_record.testprint2sheet "Position", myrange
+    'Neue Pos im Sheet eine Zeile runter
+    Set myrange = myrange.Offset(1, 0)
+    'Unter-Position ausgeben
+    cls_UPos_record.testprint2sheet "Unter-Position", myrange
+End Sub
+Public Function cur_rec_field(typ$, key$)
+    If UCase(typ) = "POS" Then
+        'cls_UPos_felder
+        cur_rec_field = cls_Pos_record.value(key)
+    ElseIf UCase(typ) = "UPOS" Then
+        cur_rec_field = cls_UPos_record.value(key)
+    Else
+        Err.Raise Number:=vbObjectError + 2, Description:="Unzulässiger Typ <" & typ & "> in Modul Pos_unterpos_records.cur_rec_field !!"
+    End If
 End Function
-Sub del_sheet(sheet2del As Worksheet)
-    Application.DisplayAlerts = False
-    sheet2del.Delete
-    Application.DisplayAlerts = True
-End Sub
+Public Property Get pos_record() As record
+   Set pos_record = cls_Pos_record
+End Property
+Public Property Get Upos_record() As record
+    Set Upos_record = cls_UPos_record
+End Property
+Public Property Get node_count() As Integer
+    node_count = cls_pos_upos_nodes.Length
+End Property
 
 
 ================================================================================
-vbform: Vorauswahl_frm
+vbclass: record
 ================================================================================
-Public ok_pressed As Boolean
-Private Sub ESC_btn_Click()
-        Me.Hide
-        ok_pressed = False
-End Sub
-Private Sub OK_btn_Click()
-    If bis_textbox.Value < von_textbox.Value Then
-        MsgBox "Der Wert für ""von"" muss kleiner sein, als der Wert für ""bis"""
-    ElseIf Int(bis_textbox.Value) > KA_Id_max Then
-        MsgBox "Der Wert für ""bis"" muss kleiner oder gleich der höchsten verfügbare Auftragsnummer sein : " & KA_Id_max
-    ElseIf Int(von_textbox.Value) < KA_Id_min Then
-        MsgBox "Der Wert für ""von"" muss größer oder gleich der kleinsten verfügbare Auftragsnummer sein : " & KA_Id_min
-    Else
-        ok_pressed = True
-        Me.Hide
-    End If
-End Sub
-Private Sub UserForm_Activate()
-    Update_Form_Before_Showing
-End Sub
-Private Sub UserForm_Initialize()
-    set_globals
-    ok_pressed = False
-    Update_Form_Before_Showing
-End Sub
-Sub Update_Form_Before_Showing()
-    KA_Id_max = get_max_KA_Id
-    bis_textbox.Value = KA_Id_max
-    KA_Id_min = get_min_KA_Id
-    von_textbox.Value = KA_Id_min
-End Sub
-
-
-================================================================================
-vbmodule: Status
-================================================================================
-Public Sub Status_lesen()
-    'Status des letzten Einlesen holen
-    prog_status.letzter_Import = status_sheet.Range("B1")
-End Sub
-Public Sub Status_speichern()
-    'akt Status ablegen
-    status_sheet.Range("B1") = prog_status.letzter_Import
-End Sub
-
-
-================================================================================
-vbform: Import_frm
-================================================================================
-Public importieren As Boolean
-Private Sub ESC_btn_Click()
-        Me.Hide
-        importieren = False
-End Sub
-Private Sub OK_btn_Click()
-    If Int(tage_zurueck.Value) < 0 Then
-        MsgBox "Die Anzahl der Tage muß größer 0 sein !"
-    Else
-        Me.Hide
-        importieren = True
-    End If
-End Sub
-Private Sub UserForm_Activate()
-    Update_Form_Before_Showing
-End Sub
-Private Sub UserForm_Initialize()
-    set_globals
-    importieren = False
-    Update_Form_Before_Showing
-End Sub
-Sub Update_Form_Before_Showing()
-    Me.letztes_Importdatum = prog_status.letzter_Import
-    Me.aelteste_AB_Id = get_min_KA_Id
-    Me.aelteste_AB_Datum = get_min_KA_date
-    Me.neueste_AB_Id = get_max_KA_Id
-    Me.neueste_AB_Datum = get_max_KA_date
-End Sub
-
-
-================================================================================
-vbmodule: Transfer_2_print_Sheet
-================================================================================
-Public out_row  As Long
-'Uebertraegt Daten der gewaehlten ABs vom Import-Sheet auf Print-Sheet
-Public Sub transfer_selected_ABs()
-    Dim anz_ab%
-    Dim start_row As Long
-    print_sheet.Cells.ClearContents
-    out_row = 1
-    'fuer alle abs der Liste
-    start_row = 2
-    For anz_ab = 0 To UBound(KA_Id_liste)
-        'Suche 1 AB in main_sheet und uebertrage nach print sheet
-        'liefert startzeile in main_sheet fuer naechste Suche
-        start_row = transfer_single_AB(start_row, KA_Id_liste(anz_ab))
+Option Explicit
+'Dictionary mit allen key-value-Paaren eines QM-datensatzes für beliebige Ebenen (Projekt,Position,...)
+Private cls_record As New Dictionary
+'Dictionary mit allen key-value-Paaren eines XML-Knotens fuellen
+'Verlässt sich auf Wallrodt-XML-Schema: Jeder Unterknoten hat genau 1 Attribut dessen Wert zum value wird, der Knoten-Name wird key
+Public Sub fill_from_XML_Doc(myXMLnode As IXMLDOMElement)
+    Dim my_ChildNode As IXMLDOMElement
+    Set cls_record = New Dictionary
+    'Für alle Kinder
+    For Each my_ChildNode In myXMLnode.ChildNodes
+        'Debug.Print my_ChildNode.nodeName
+        If cls_record.Exists(my_ChildNode.nodeName) Then
+            Application.StatusBar = "Doppelknoten: " & my_ChildNode.nodeName
+        Else
+            cls_record.Add my_ChildNode.nodeName, my_ChildNode.Attributes(0).NodeValue
+        End If
     Next
 End Sub
-'Suche 1 AB in main_sheet und uebertrage nach print sheet
-'liefert startzeile in main_sheet fuer naechste Suche
-Public Function transfer_single_AB(start_row As Long, id As Long) As Long
-    Dim cur_id As Long, last_row As Long
-    Dim found As Boolean, alte_Spalte_war_2 As Boolean
-    last_row = hole_zeilen(main_sheet.Range("A1"))
-    found = False
-    Do While start_row <= last_row
-        cur_id = CLng(Trim(main_sheet.Cells(start_row, 1).Value))
-        If cur_id = id Then
-            found = True
-            Exit Do
-        End If
-        start_row = start_row + 1
-    Loop
-    'Nix gefunden watt nu
-    '#############################################################
-    If Not found Then
- MsgBox "Ihr Auftrag " & id & " konnte nicht gefunden werden." & vbCrLf & vbCrLf               & "Evtl. Daten erneut einlesen."
-        End
-    End If
-    'Label 1 der AB in Etiketten-Spalte 1 uebertragen
-    transfer_single_label start_row, out_row, 2
-    'Weitere pos zu selben AB suchen
-    start_row = start_row + 1
-    Do While start_row <= last_row
-        cur_id = CLng(Trim(main_sheet.Cells(start_row, 1).Value))
-        If cur_id <> id Then
-            'fertig mit dieser AB
-            Exit Do
-        End If
-        If alte_Spalte_war_2 Then
-            'Spalte 1
-            out_row = out_row + max_lines + 2 '  Vorschub auf naechstes Etikett mit 2 Leerzeile
-            transfer_single_label start_row, out_row, 2
-            alte_Spalte_war_2 = False
-        Else
-            'Spalte 2
-            transfer_single_label start_row, out_row, 6
-            alte_Spalte_war_2 = True
-        End If
-        start_row = start_row + 1
-    Loop
-    out_row = out_row + max_lines + 2 '  Vorschub auf naechstes Etikett mit 2 Leerzeile
-    transfer_single_AB = start_row 'fuer naechste Suche
+Public Function count() As Integer
+    count = cls_record.count
 End Function
-'in_row ,in_col: Zelle aus der gelesen wird
-'out_row,out_col: Ziel-Telle
-'trans_id: Index der Bezeiochnung zum Uebersetzen
-'sprache: Zielsprachen
-Public Sub print_attribute_with_translation(in_row As Long, in_col%, out_row As Long, out_col%, trans_id, sprache)
-    With main_sheet.Range("A1")
-        att = Trim(.Cells(in_row, in_col).Value)
-        If att <> "" Then
-            print_sheet.Cells(out_row, out_col).Value = translate(trans_id, sprache)
-            If IsNumeric(att) Then
-                att = "'" + CStr(att)
-            End If
-            print_sheet.Cells(out_row, out_col + 2).Value = att
-            out_row = out_row + 1
-        End If
-    End With
-End Sub
-'Ein Etikett uebertragen und formatieren
-Public Sub transfer_single_label(in_row As Long, start_out_row As Long, out_col%)
-    Dim sprache$, txt$
-    Dim in_col%
-    Dim typ$, mat$, spez$, k_id$
-    Dim out_row As Long, max_out_row As Long
-    out_row = start_out_row
-    max_out_row = start_out_row + max_lines - 1 'Etikett endet
-    With main_sheet.Range("A1")
-        sprache = Trim(.Cells(in_row, 4).Value)
-        '1 Leerzeile am Anfang
-        out_row = out_row + 1
-        'Auftrags-Nr
-        print_sheet.Cells(out_row, out_col).Value = "'" + CStr(Trim(.Cells(in_row, col_ab_nr).Value))
-        out_row = out_row + 1
-        'Pos-Nr, teile nummer und Stück
-        print_sheet.Cells(out_row, out_col).Value = Trim(.Cells(in_row, col_pos_nr).Value)
-        tg_nr = Trim(.Cells(in_row, col_t_tg_nr).Value)
-        menge = Trim(.Cells(in_row, col_menge).Value)
-        print_sheet.Cells(out_row, out_col + 1).Value = tg_nr + "  (" + menge + "x)"
-        out_row = out_row + 1
-        'Teile-Bez
-        print_sheet.Cells(out_row, out_col).Value = Trim(.Cells(in_row, col_teil_bezeich).Value)
-        out_row = out_row + 1
-        'Type
-        print_attribute_with_translation in_row, col_typ, out_row, out_col, 1, sprache
-        'Werkstoff
-        print_attribute_with_translation in_row, col_werkstoff, out_row, out_col, 2, sprache
-        'Spez
-        print_attribute_with_translation in_row, col_spezifikation, out_row, out_col, 3, sprache
-        'Kunden-Id
-        print_attribute_with_translation in_row, col_k_ident, out_row, out_col, 4, sprache
-        'Kunden-Ref-Nr (K_Typ)
-        print_attribute_with_translation in_row, col_k_Typ, out_row, out_col, 5, sprache
-        'Kunden-Z-NR
-        print_attribute_with_translation in_row, col_k_Zchn_Nr, out_row, out_col, 6, sprache
-        'Rest
-        in_col = col_teil_bezeich + 1
-        Do While Not IsEmpty(.Cells(in_row, in_col))
-            txt = Trim(.Cells(in_row, in_col).Value)
-            If IsNumeric(txt) Then
-                txt = "'" + CStr(txt)
-            End If
-            print_sheet.Cells(out_row, out_col).Value = txt
-            If out_row = max_out_row Then
-                Exit Do
-            End If
-            out_row = out_row + 1
-            in_col = in_col + 1
-        Loop
-    End With
-    out_row = out_row + 1 '1 Leerzeile danach
-End Sub
-Sub print_preview()
-    print_sheet.PrintPreview
-End Sub
-Sub print_it()
-    seiten = Int(out_row / lines_per_page)
-    If seiten > max_print_seiten Then
-        ans = MsgBox("Sollen wirklich " + Str(seiten) + " Seiten gedruckt werden ?", vbYesNo, "Achtung")
+Public Function items() As Variant
+    items = cls_record.items()
+End Function
+Public Function keys() As Variant
+    keys = cls_record.keys()
+End Function
+Public Function value(key$) As String
+    If Not cls_record.Exists(key) Then
+        Err.Raise Number:=vbObjectError + 2, Description:="Feld <" & key & "> nicht gefunden. Vermutlich falsche XML-Struktur"
     Else
-        ans = vbYes 'Weniger als max_seiten immer durcken
+        value = cls_record.Item(key)
     End If
-    If ans = vbYes Then
-        print_sheet.Select
-        ExecuteExcel4Macro "PRINT(1,,,1,,,,,,,,2,,,TRUE,,FALSE)"
-        UI_sheet.Select
+End Function
+Public Property Get record() As record
+    Set record = cls_record
+End Property
+'testausgabe
+Public Sub testprint2sheet(headline$, Optional myrange As Range)
+    Dim i As Long
+    Dim existing_sheet As Boolean
+    existing_sheet = False
+    If myrange Is Nothing Then
+        'Neue Mappe,neues Blatt
+        Set myrange = Application.Workbooks.Add.ActiveSheet.Range("a1")
+        'Blatt vorbereiten
+        Cells.HorizontalAlignment = xlLeft
+        Cells.VerticalAlignment = xlTop
+        Cells.Font.Size = 9
+        Columns("A:A").ColumnWidth = 6
+        Columns("C:C").ColumnWidth = 70
+        existing_sheet = True
     End If
-End Sub
-
-
-================================================================================
-vbform: multi_Auswahl_frm
-================================================================================
-Public ok_pressed As Boolean
-Private Sub ESC_btn_Click()
-        ok_pressed = False
-        Me.Hide
-End Sub
-Private Sub OK_btn_Click()
-    Dim i%
-    For i = 0 To print_lb.ListCount - 1
-        'store it
-        ReDim Preserve KA_Id_liste(i)
-        KA_Id_liste(i) = print_lb.List(i)
+    myrange = headline
+    myrange.Font.FontStyle = "Fett"
+    myrange.Font.Size = 12
+    For i = 1 To cls_record.count
+        myrange.Offset(i, 1) = cls_record.keys(i - 1)
+        myrange.Offset(i, 2) = cls_record.items(i - 1)
     Next i
-    ok_pressed = True
-    Me.Hide
+    If Not existing_sheet Then
+        'Blatt nachbereiten
+        Columns("B:B").EntireColumn.AutoFit
+        Cells.EntireRow.AutoFit
+    End If
+    'Pos merken und zurückgeben
+    Set myrange = myrange.Offset(i, 0)
 End Sub
-'Maus: Eine AB aus print_lb raus schieben
-Private Sub print_lb_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
-    move_one_Click source_lb:=print_lb, target_lb:=no_print_lb, moveall:=False
+
+
+================================================================================
+vbclass: QM_XML_Doc
+================================================================================
+'Spezifische Funktionen, die nur im Quote-Master-Umfeld gebraucht werden / funktionieren
+Private cls_xmlDoc As DOMDocument60
+Private cls_XML_Toolbox As New XML_Toolbox
+Private cls_Projekt_record As New Projekt_record
+Private cls_pump_records As New Pos_unterpos_records
+'tags des dokument-records
+Private cls_dok_date As Date
+Private cls_dok_typ$
+Private cls_dok_rev$
+Private cls_dok_proj_nr$
+'Einzelne XML incl Projektknoten lesen
+'name = fileToOpen wenn übergeben, sonst Nutzerauswahl in default_dir (wenn übergeben)
+Public Sub open_Single_Doc(Optional default_dir$ = "", Optional ByVal fileToOpen As String = "")
+    Dim search$
+    Dim doc_nodes As IXMLDOMNodeList  'alle Unterknoten unter Dokument
+    If fileToOpen = "" Then
+        fileToOpen = Waehle_Datei("XML-File waehlen", default_dir, "XML Dateien (*.xml), *.xml")
+    End If
+    'XML einlesen und pruefen
+    cls_XML_Toolbox.open_Doc (fileToOpen)
+    Set cls_xmlDoc = cls_XML_Toolbox.xmldoc
+    'Erstellungsdatum
+    cls_dok_date = FileDateTime(fileToOpen)
+    'Dokumentdaten suchen und ablegen
+    'search = "/Dokument/Erstellungsdatum"
+    'cls_dok_date = get_document_tag(search)
+    search = "/Dokument/Dokumententyp"
+    cls_dok_typ = get_document_tag(search)
+    search = "/Dokument/Projektnr."
+    cls_dok_proj_nr = get_document_tag(search)
+    search = "/Dokument/Revisionsindex"
+    cls_dok_rev = get_document_tag(search)
+    'Projektknoten im XML suchen und Daten in Objekt ablegen
+    cls_Projekt_record.fill_from_XML_Doc Me
+    search_pumps
 End Sub
-'Button: Alle AB aus print_lb raus schieben
-Private Sub deselect_all_Click()
-    move_one_Click source_lb:=print_lb, target_lb:=no_print_lb, moveall:=True
+Private Function get_document_tag(tag_path$) As Variant
+    'Dokument-Tags suchen und Wert liefern
+    Set doc_nodes = cls_XML_Toolbox.search_for_nodes(cls_XML_Toolbox.xmlRoot, tag_path)
+    get_document_tag = doc_nodes.Item(0).text
+End Function
+'Suche alle Unterpositionen, die Pumpen sind
+Private Sub search_pumps()
+    Dim search$
+    search = "/*/PositionenRecords/UnterpositionenRecords/UnterpositionRecord/KnotenLevelA[@CARDINAL='1']"
+    'search = "//*/KnotenLevelA[@CARDINAL='1']"
+    'Suche alle Unterpositionen, die Pumpen sind
+    Set cls_pump_records = New Pos_unterpos_records
+    cls_pump_records.init Me, search
 End Sub
-'Button: Eine AB aus print_lb raus schieben
-Private Sub deselect_one_Click()
-    move_one_Click source_lb:=print_lb, target_lb:=no_print_lb, moveall:=False
+Public Property Get XML_Toolbox() As Variant
+    Set XML_Toolbox = cls_XML_Toolbox
+End Property
+Public Property Get xmlRoot() As IXMLDOMElement
+    Set xmlRoot = cls_xmlDoc.DocumentElement
+End Property
+Public Property Get xmldoc() As DOMDocument60
+    Set xmldoc = cls_xmlDoc
+End Property
+Public Sub keys2sheet(Optional myrange As Range)
+    Dim key As Variant
+    Dim i%
+    If myrange Is Nothing Then
+        'Neue Mappe,neues Blatt
+        Set myrange = Application.Workbooks.Add.ActiveSheet.Range("a1")
+    End If
+    myrange = "Proj"
+    i = 1
+    For Each key In cls_Projekt_record.keys
+        myrange.Offset(i, 0) = key
+        i = i + 1
+    Next
+    'Zuerst Einmal Daten lesen fuer Pos und Upos, sonst keys leer
+    cls_pump_records.make_record_current 0
+    myrange.Offset(0, 1) = "Pos"
+    i = 1
+    For Each key In cls_pump_records.pos_record.keys
+        myrange.Offset(i, 1) = key
+        i = i + 1
+    Next
+    myrange.Offset(0, 2) = "UPos"
+    i = 1
+    For Each key In cls_pump_records.Upos_record.keys
+        myrange.Offset(i, 2) = key
+        i = i + 1
+    Next
+    Cells.Font.Size = 10
+    Cells.EntireRow.AutoFit
+    Cells.EntireColumn.AutoFit
 End Sub
-'Maus: Einzelne AB in print_lb schieben
-Private Sub no_print_lb_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
-    move_one_Click source_lb:=no_print_lb, target_lb:=print_lb, moveall:=False
+Public Sub testprint2sheet(Optional myrange As Range)
+    Dim i%
+    cls_Projekt_record.testprint2sheet myrange
+    'für alle gefundenen Pumpen:
+    'Testausgabe in selbes sheet (Neue Pos im Sheet eine Zeile runter)
+    Set myrange = myrange.Offset(1, 0)
+    For i = 0 To cls_pump_records.node_count - 1
+        'Hole Daten der Unterpos und zugehöriger Pos ins Objekt
+        cls_pump_records.make_record_current i
+        cls_pump_records.testprint_cur_record2sheet myrange
+    Next i
 End Sub
-'Button: Alle AB in print_lb schieben
-Private Sub select_all_Click()
-    move_one_Click source_lb:=no_print_lb, target_lb:=print_lb, moveall:=True
-End Sub
-'Button: Einzelne AB in print_lb schieben
-Private Sub select_one_Click()
-    move_one_Click source_lb:=no_print_lb, target_lb:=print_lb, moveall:=False
-End Sub
-'Basisfunktion zum Verschieben von Eintraegen zwischen zwei Listboxen
-Private Sub move_one_Click(source_lb As MSForms.ListBox, target_lb As MSForms.ListBox, moveall As Boolean)
-    Dim i%, j%
-    i = source_lb.ListCount - 1
-    Do While i >= 0
-        'Eintrag ausgewaehlt => verschieben
-        If source_lb.Selected(i) Or moveall Then
-            'Suche den korrekten EInfuegepunkt
-            j = 0
-            Do While j < target_lb.ListCount
-                If source_lb.List(i) < target_lb.List(j) Then
-                    Exit Do
-                End If
-                j = j + 1
-            Loop
-            'Einfuegen
-            target_lb.AddItem source_lb.List(i), j
-            source_lb.RemoveItem i
+Public Property Get Projekt_record() As Projekt_record
+    Set Projekt_record = cls_Projekt_record
+End Property
+Public Property Get pump_count() As Integer
+    pump_count = cls_pump_records.node_count
+End Property
+Public Property Get Pump_records() As Pos_unterpos_records
+    Set Pump_records = cls_pump_records
+End Property
+Public Function cur_rec_field(typ$, key$)
+    If UCase(typ) = "PROJ" Then
+        cur_rec_field = cls_Projekt_record.value(key)
+    ElseIf UCase(typ) = "POS" Then
+        cur_rec_field = cls_pump_records.pos_record.value(key)
+    ElseIf UCase(typ) = "UPOS" Then
+        cur_rec_field = cls_pump_records.Upos_record.value(key)
+    Else
+        Err.Raise Number:=vbObjectError + 2, Description:="Unzulässiger Typ <" & typ & "> in Modul QM_XML_Doc.cur_rec_field !!"
+    End If
+End Function
+Public Function keys(typ$) As Variant
+    If UCase(typ) = "PROJ" Then
+        keys = cls_Projekt_record.keys
+    ElseIf UCase(typ) = "POS" Then
+        keys = cls_pump_records.pos_record.keys
+    ElseIf UCase(typ) = "UPOS" Then
+        keys = cls_pump_records.Upos_record.keys
+    Else
+        Err.Raise Number:=vbObjectError + 2, Description:="Unzulässiger Typ <" & typ & "> in Modul QM_XML_Doc.keys !!"
+    End If
+End Function
+Public Property Get dok_date() As Date
+    dok_date = cls_dok_date
+End Property
+Public Property Get dok_typ() As String
+    dok_typ = cls_dok_typ
+End Property
+Public Property Get dok_rev() As String
+    dok_rev = cls_dok_rev
+End Property
+Public Property Get dok_proj_nr() As String
+    dok_proj_nr = cls_dok_proj_nr
+End Property
+
+
+================================================================================
+vbclass: DB_Reader
+================================================================================
+'Functionen zum Behandeln von Excel-Tabellen oder TXT-Files als ADO-Record
+'
+'Die Klasse besitzt einen Recordset (locRecordset,Property rs), der von verschiedenen Routinen als Default verwendet wird.
+'Diese Routinen sollten noch um einen optionalen rs Parameter erweiter werden (ToDo)
+Private locAdoConnection As New ADODB.Connection
+Private locRecordset As New ADODB.Recordset
+'Oeffnen eines Recordsets
+'###################################################################################################
+Public Function open_rs_retry(sql$) As Recordset
+'http://msdn.microsoft.com/en-us/library/windows/desktop/ms675544%28v=vs.85%29.aspx
+    Dim myrs As New Recordset
+    Dim my_err_msg$
+    myrs.CursorLocation = adUseClient ' damit recordcount geht
+    If locAdoConnection.State = 0 Then
+        MsgBox "Keine Connection in open_rs_retry: Programmabbruch !!!"
+        End
+    End If
+    On Error Resume Next
+    open_err = 1
+    Do While open_err > 0
+        myrs.Open sql, locAdoConnection, adOpenStatic, adLockPessimistic ', adCmdFile
+        open_err = locAdoConnection.Errors.count
+        If open_err > 0 Then
+            my_err_msg = Now() & " " & dbr.Connection.Errors.Item(0).Description
+            Debug.Print my_err_msg
+            Application.StatusBar = my_err_msg
+            DoEvents
+            Application.Wait (Now + TimeValue("0:00:30"))
         End If
-        i = i - 1
+    Loop
+    Set open_rs_retry = myrs
+    Debug.Print myrs.RecordCount
+End Function
+Public Function open_rs(sql$) As Recordset
+'http://msdn.microsoft.com/en-us/library/windows/desktop/ms675544%28v=vs.85%29.aspx
+    On Error Resume Next
+    locRecordset.Close
+    On Error GoTo Fehler
+    locRecordset.CursorLocation = adUseClient ' damit recordcount geht
+    locRecordset.Open sql, locAdoConnection, adOpenStatic, adLockPessimistic ', adCmdFile
+    Set open_rs = locRecordset
+    On Error Resume Next
+    Exit Function
+Fehler:
+    'MsgBox "Fehler: Oeffnen Recordset" & Err.Description
+    Application.StatusBar = "Fehler: Oeffnen Recordset" & Err.Description
+    On Error Resume Next
+End Function
+Public Property Set rs(myrs As Recordset)
+    Set locRecordset = myrs
+End Property
+Public Property Get rs() As Recordset
+    Set rs = locRecordset
+End Property
+'###################################################################################################
+'Ausführen eines SQL-Befehl ohne RS-Rueckgabe
+'Gibt aber die Anzahl betroffener Datensätze zurück (z.B Insert Into Abfrage)
+Public Function sql_cmd_no_output(sql$) As Long
+    Dim records_aff As Long
+    On Error GoTo Fehler
+    locAdoConnection.Execute sql, records_aff, adCmdText + adExecuteNoRecords
+    sql_cmd_no_output = records_aff
+    On Error Resume Next
+    Exit Function
+Fehler:
+    MsgBox "Fehler: " & Err.Description
+    On Error Resume Next
+End Function
+'###################################################################################################
+'Ausgabefunktionen fuer Recordsets
+'Inhalt auf Sheet übertragen ohne Rücksicht auf vorhandenen Inhalt
+'myrange zeigt auf linke obere Ecke der Überschrift, daten kommen 1 Zeile tiefer
+'clear=true löscht Datenbereich (unter header) vorher
+'header=true schreibt Feldnamen als Überschrift
+Sub recordset_2_sheet(myrange As Range, Optional myrs As Recordset, Optional clear As Boolean, Optional header As Boolean)
+    Dim data_rng_beg As Range
+    Dim data_rng_end As Range
+    On Error GoTo Fehler
+    If myrs Is Nothing Then
+        Set myrs = locRecordset
+    End If
+    If clear Then
+        Set data_rng_beg = myrange.Offset(1, 0)
+        Set data_rng_end = myrange.Offset(myrange.Parent.Rows.count - myrange.Row, myrs.fields.count - 1)
+'        Debug.Print Range(data_rng_beg, data_rng_end).Address
+        Range(data_rng_beg, data_rng_end).ClearContents
+        letzte_Zeile = 1 'Daten nach Header
+    Else
+        letzte_Zeile = hole_zeilen(myrange) 'Sucht die letzte Zeile, die in myrange gefüllt ist
+    End If
+    If header Then
+        header_2_sheet myrange, myrs
+    End If
+    myrange.Offset(letzte_Zeile, 0).CopyFromRecordset myrs
+    On Error Resume Next
+    Exit Sub
+Fehler:
+    MsgBox "Fehler: " & Err.Description
+    On Error Resume Next
+End Sub
+'Anfügen auf Sheet mit Rücksicht auf vorhandenen Inhalt
+Sub append_recordset_2_sheet(myrange As Range, Optional myrs As Recordset)
+    Dim letzte_Zeile As Long
+    On Error GoTo Fehler
+    letzte_Zeile = hole_zeilen(myrange) 'Sucht die letzte Zeile, die in myrange gefüllt ist
+    If myrs Is Nothing Then
+        myrange.Offset(letzte_Zeile, 0).CopyFromRecordset locRecordset
+    Else
+        myrange.Offset(letzte_Zeile, 0).CopyFromRecordset myrs
+    End If
+    On Error Resume Next
+    Exit Sub
+Fehler:
+    MsgBox "Fehler: " & Err.Description
+    On Error Resume Next
+End Sub
+'Feldnamen als Header auf Sheet (nützlich wenn mit SQl "Insert Into" angefügt wird)
+Public Sub header_2_sheet(myrange As Range, Optional myrs As Recordset)
+    Dim i%
+    On Error GoTo Fehler
+    If myrs Is Nothing Then
+        Set myrs = locRecordset
+    End If
+    For i = 0 To myrs.fields.count - 1
+        myrange.Offset(0, i) = myrs.fields(i).name
+    Next
+    On Error Resume Next
+    Exit Sub
+Fehler:
+    MsgBox "Fehler: " & Err.Description
+    On Error Resume Next
+End Sub
+'Testausgabe eines rs auf debug.ausgabe
+Public Sub test_output(Optional myrs As Recordset)
+    Dim i%, text$
+    On Error GoTo Fehler
+    If myrs Is Nothing Then
+        Set myrs = locRecordset
+    End If
+    Do Until myrs.EOF
+        text = ""
+        For i = 0 To myrs.fields.count - 1
+            text = text & myrs.fields(i).name & ":<" & myrs.fields(i).value & ">"
+        Next
+        Debug.Print text
+        myrs.MoveNext
+    Loop
+    If myrs.RecordCount > 0 Then
+        myrs.MoveFirst
+    End If
+    On Error Resume Next
+    Exit Sub
+Fehler:
+    MsgBox "Fehler: " & Err.Description
+    On Error Resume Next
+End Sub
+'Zaehl- oder Summierungsabfrage ausführen. SQL muß so sein, das Ergebins im Feld "Anzahl abgelegt wird
+'z.B. "Select sum(st) as Anzahl  from Import_tbl where Status2=2;"
+Public Function Anzahl(sql$) As Long
+    Dim myrs As ADODB.Recordset
+    Set myrs = Me.open_rs(sql)
+    If IsNull(myrs.fields("Anzahl")) Then
+       Anzahl = 0
+    Else
+       Anzahl = myrs.fields("Anzahl")
+    End If
+End Function
+'##########################################################################
+'Oeffnen von Datenbanken
+Public Sub Open_Informix_Connection()
+    Dim sAdoConnectString As String
+    sAdoConnectString = "Dsn=unipps;Driver={INFORMIX 3.30 32 BIT};"
+    On Error GoTo Fehler
+    locAdoConnection.Open sAdoConnectString
+Aufraeumen:
+    On Error Resume Next
+    Exit Sub
+Fehler:
+    'MsgBox "Fehler beim Oeffnen der Connection: " & Err.Description
+    Application.StatusBar = "Fehler beim Oeffnen der Connection: " & Err.Description
+    Resume Aufraeumen
+End Sub
+'Oeffnen von Datenbanken
+Public Sub Open_SQLite_Connection(db_path$)
+    Dim sAdoConnectString As String, sPfad As String
+    sAdoConnectString = "Driver=SQLite3 ODBC Driver;Database=" & db_path
+    On Error GoTo Fehler
+    locAdoConnection.Open sAdoConnectString
+Aufraeumen:
+    On Error Resume Next
+    Exit Sub
+Fehler:
+    'MsgBox "Fehler beim Oeffnen der Connection: " & Err.Description
+    Application.StatusBar = "Fehler beim Oeffnen der Connection: " & Err.Description
+    Resume Aufraeumen
+End Sub
+Public Sub Open_Excel_Connection(path_2_workbook$)
+    Dim sAdoConnectString As String
+ sAdoConnectString =    "DRIVER={Microsoft Excel Driver (*.xls)};IMEX=1;ReadOnly=0;DBQ=" & path_2_workbook$
+    On Error GoTo Fehler
+    '?? damit recordcount geht Nebenwirkung ? locAdoConnection.CursorLocation = adUseClient
+    locAdoConnection.Open sAdoConnectString
+Aufraeumen:
+    On Error Resume Next
+    Exit Sub
+Fehler:
+    MsgBox "Fehler beim Oeffnen der Connection: " & Err.Description
+    Resume Aufraeumen
+End Sub
+Sub Open_Txt_Connection(data_source_dir$)
+    Dim sAdoConnectString As String, sPfad As String
+ sAdoConnectString = "Provider=Microsoft.Jet.OLEDB.4.0;" & "Data Source=" & data_source_dir & ";" &          "Extended Properties=""text;HDR=YES;FMT=TABDelimited(;)"""     'HDR=NO wenn csv keine Headerzeile hat;FMT=Fixed bei festen Spalten
+    On Error GoTo Fehler
+    locAdoConnection.Mode = adModeReadWrite
+    locAdoConnection.Open sAdoConnectString
+Aufraeumen:
+    On Error Resume Next
+    Exit Sub
+Fehler:
+    MsgBox "Fehler: " & Err.Description
+    Resume Aufraeumen
+End Sub
+Public Property Get Connection() As ADODB.Connection
+    Set Connection = locAdoConnection
+End Property
+'##########################################################################
+Private Sub Class_Terminate()
+   locAdoConnection.Close
+    Set locAdoConnection = Nothing
+    'locRecordset.Close
+End Sub
+'##########################################################################
+'veraltet nicht mehr benutzten
+'##########################################################################
+Public Function sql_cmd_with_output(sql$) As Recordset
+    On Error Resume Next
+    locRecordset.Close
+    On Error GoTo 0
+    locRecordset.CursorLocation = adUseClient ' damit recordcount geht
+    locRecordset.Open sql, locAdoConnection, adOpenDynamic, adLockOptimistic ', adCmdFile
+    Set sql_cmd_with_output = locRecordset
+End Function
+'???? Wozu Unterschiede zu txt_recordset und sql_cmd_with_output ?
+Public Property Get xl_recordset(sql$) As Recordset
+    On Error GoTo Fehler
+    With locRecordset
+        .Source = sql
+        .ActiveConnection = locAdoConnection
+        .Open
+    End With
+    Set xl_recordset = locRecordset
+Aufraeumen:
+    On Error Resume Next
+    Exit Property
+Fehler:
+    MsgBox "Fehler: " & Err.Description
+    Resume Aufraeumen
+End Property
+Public Property Get txt_recordset(sql$) As Recordset
+    Const adOpenStatic = 3
+    Const adLockOptimistic = 3
+    Const adCmdText = &H1
+    On Error GoTo Fehler
+    locRecordset.Open sql, locAdoConnection, adOpenStatic, adLockOptimistic, adCmdText
+    Set txt_recordset = locRecordset
+    On Error Resume Next
+    Exit Property
+Fehler:
+    MsgBox "Fehler: " & Err.Description
+    On Error Resume Next
+End Property
+
+
+================================================================================
+vbclass: Kalenderwoche
+================================================================================
+'!!!!!!!!!!!!!!! Fehler ?? letzte Tage am Jahresende werden zu  KW1 im nächsten Jahr
+'OK wenn 1.1 in KW 1 Wenn 1.1 in KW 0 ??????
+Private locWednesday As Date 'Mittwoch als Bezugstag der Woche
+Private locKW% 'Zahl der Woche
+'Quasi-Konstruktor der KW aus Datum:
+'Mittwoch der Woche von myday als Bezugsdatum der KW setzen und Ordinalzahl der KW bestimmen und speichern
+Public Property Let Mittwoch(myday As Date)
+    locWednesday = Mittwoch_gleiche_Woche(myday)
+    locKW = KW(locWednesday)
+'    Debug.Print locWednesday, locKW
+End Property
+'Quasi-Konstruktor der KW aus Textwert "WW/JJJJ":
+'Mittwoch der Woche von myday als Bezugsdatum der KW setzen und Ordinalzahl der KW bestimmen und speichern
+Public Property Let KW_txt(myKW_txt As String)
+    locWednesday = Mittwoch_der_KW(myKW_txt)
+    locKW = KW(locWednesday)
+'    Debug.Print locWednesday, locKW
+End Property
+'Berechnet zu einer KW eines Jahres in Textform ("WW/JJJJ") den Mittwoch als Datumswert
+Public Function Mittwoch_der_KW(myKW_txt As String) As Date
+    'Ablauf
+    '1. (Neujahr des Jahres + 7*(WW -1)) ergibt einen Tag in der KW (gleicher WochenTag wie Neujahr)
+    'Anzahl der Wochen immer -1 da sonst KW1 zu KW2 wird (+7 Tage) daher 7*(WW-1)
+    '2. zu diesem Tag den Mittwoch der gleichen KW bestimmen
+    '3. Sonderfall (z.B 1.1.2016) kurze 1. Woche zählt als KW 0 wenn sie max. 3 Tage hat, also 1.1 Fr,Sa,So
+    ' dann 7 Tage mehr addieren, bzw WW=WW+1
+    Dim WW%, JJJJ%, neujahr As Date
+    WW = Left(myKW_txt, 2) - 1
+    JJJJ = Right(myKW_txt, 4)
+    'Neujahrstag des Jahres ermitteln
+    neujahr = DateSerial(JJJJ, 1, 1)
+    'Ist die erste angebrochene Woche ab 1.1 KW1 (ja, wenn sie mehr als 3 Tage hat)
+    If Weekday(neujahr, vbMonday) >= 5 Then WW = WW + 1
+    Mittwoch_der_KW = Mittwoch_gleiche_Woche(neujahr + WW * 7)
+    'hier evtl checken, ob Jahr verändert wurde
+End Function
+'Berechnet zu einem Datum den Mittwoch der gleichen Woche
+Public Function Mittwoch_gleiche_Woche(myday As Date) As Date
+    'Montag ist Wochentag 1,So ist 7 (durch Weekday(myday, vbMonday))
+    'Alle werden zu Wochentag 3 der selben Woche durch Addition von delta:
+    ' Bei Wochentag: 1 2 3  4  5  6  7
+    ' muss delta:    2 1 0 -1 -2 -3 -4   sein, also delta= 3 - Wochentag
+    Mittwoch_gleiche_Woche = myday + 3 - Weekday(myday, vbMonday)
+End Function
+Public Property Get KW_int() As Integer
+    KW_int = locKW
+End Property
+Public Property Get KW_txt() As String
+    KW_txt = Format(locKW, "00") & "/" & Year(locWednesday)
+End Property
+Public Property Get Mittwoch() As Date
+    Mittwoch = locWednesday
+End Property
+'Montag als erster Tag der KW
+Public Property Get Anfang() As Date
+    Anfang = locWednesday - 2
+End Property
+'Sonntag als letzter Tag der KW
+Public Property Get Ende() As Date
+    Ende = locWednesday + 4
+End Property
+'bestimmt ob diese KW (me) groesser als die uebergebene ist
+Public Function greater(testKW$) As Boolean
+    Dim testwoche$, testjahr$, aktwoche$, aktjahr$
+    testwoche = Left(testKW, 2)
+    testjahr = Mid(testKW, 4, 4)
+    aktwoche = Format(locWednesday, "ww", vbMonday, vbFirstFourDays)
+    aktjahr = Year(locWednesday)
+    If aktjahr > testjahr Then
+            greater = True
+    ElseIf aktjahr < testjahr Then
+        greater = False
+    Else
+        If Int(aktwoche) > Int(testwoche) Then
+            greater = True
+        Else
+            greater = False
+        End If
+    End If
+End Function
+'bestimmt ob diese KW (me) groesser oder gleich als die uebergebene ist
+Public Function greater_eq(testKW$) As Boolean
+    Dim testwoche$, testjahr$, aktwoche$, aktjahr$
+    testwoche = Left(testKW, 2)
+    testjahr = Mid(testKW, 4, 4)
+    aktwoche = Format(locWednesday, "ww", vbMonday, vbFirstFourDays)
+    aktjahr = Year(locWednesday)
+    If aktjahr > testjahr Then
+            greater_eq = True
+    ElseIf aktjahr < testjahr Then
+        greater_eq = False
+    Else
+        If Int(aktwoche) >= Int(testwoche) Then
+            greater_eq = True
+        Else
+            greater_eq = False
+        End If
+    End If
+End Function
+'KW um eins erhöhen (7 Tage auf Bezugsmittwoch drauf rechnen und bestimmen)
+Public Function KW_plus_1_as_Text(old_KW_txt$) As String
+    Dim new_KW As New Kalenderwoche
+    Dim new_wednesday As Date
+    new_wednesday = Mittwoch_der_KW(old_KW_txt) + 7
+    new_KW.Mittwoch = new_wednesday
+    KW_plus_1_as_Text = new_KW.KW_txt
+End Function
+
+
+================================================================================
+vbmodule: Datum
+================================================================================
+'#########################################################################################
+' Tools fuer Kalenderwochenberechnung und Datums-SQL-Formate
+'#########################################################################################
+'Datum in ODBC-tauglichen String fuer Excel-DB wandeln
+Public Function odbc_xl_date(mydate As Date) As String
+ odbc_xl_date = "{d '" & Format(Year(mydate), "0000") & "-" & Format(Month(mydate), "00") &                "-" & Format(Day(mydate), "00") & "'}"
+    odbc_xl_date = "{d '" & Format(mydate, "yyyy\-mm\-dd") & "'}"
+    odbc_xl_date = "'" & Format(mydate, "dd.mm.yyyy") & "'"
+    odbc_xl_date = "{ts '" & Format(mydate, "yyyy\-mm\-dd 00:00:00") & "'}"
+End Function
+'Datum und Zeit in ODBC-tauglichen String fuer CSV-DB wandeln
+Public Function odbc_csv_datetime(mydate As Date) As String
+    odbc_csv_datetime = Format(mydate, "\#mm\/dd\/yyyy HH:MM:SS\#")
+End Function
+'Datum in ODBC-tauglichen String fuer CSV-DB wandeln
+Public Function odbc_csv_date(mydate As Date) As String
+    odbc_csv_date = Format(mydate, "\#mm\/dd\/yyyy\#")
+End Function
+' Die erste KW ist die mit 4 ganzen Tagen, also 1.1 nicht Fr,Sa,So.
+Public Function KW(tag As Date) As Integer
+    Dim neujahr As Date
+    Dim prev_monday As Date
+    Dim diff%
+    'Neujahrstag des Jahres ermitteln
+    neujahr = DateSerial(Year(tag), 1, 1)
+    'Montag vor Neujahr
+    diff = Weekday(neujahr, vbMonday) - 1
+    prev_monday = neujahr - diff
+    'ganze Wochen seit diesem Tag
+    KW = Int((tag - prev_monday) / 7)
+    'Zaehlt die erste angebrochene Woche ab 1.1 (ja wenn mehr als 3 Tage)
+    If Weekday(neujahr, vbMonday) < 5 Then KW = KW + 1
+End Function
+Public Function KWstr(tag As Date) As String
+    KWstr = Format(KW(tag), "00") & "/" & Year(tag)
+End Function
+
+
+================================================================================
+vbmodule: UNIPPS2Excel_Tools
+================================================================================
+'Funktionen um UNIPPS-Daten nach Excel zu holen
+'Datum filtern z.B -30 Tage bis heute
+'where feld + 30 < TODAY
+'Oft benutzte Joint Klauseln
+'-----------------------------------------------------------------------------------------------
+' f_auftragkopf + auftragkopf + auftragpos + kunde + adresse
+ Public Const f_auftragkopf = "FROM ( " & "( " & " ( " & "f_auftragkopf INNER JOIN auftragpos " & "ON f_auftragkopf.auftr_pos = auftragpos.ident_nr2 AND f_auftragkopf.auftr_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN auftragkopf ON f_auftragkopf.auftr_nr = auftragkopf.ident_nr " & ") " & "INNER JOIN kunde ON auftragkopf.kunde = kunde.ident_nr " & ") "          & "INNER JOIN adresse ON kunde.adresse = adresse.ident_nr "
+' f_auftragkopf + auftragkopf + auftragpos
+ Public Const f_auftragkopf_auftragkopf_auftragpos = "FROM ( " & "f_auftragkopf INNER JOIN auftragpos " & "ON f_auftragkopf.auftr_pos = auftragpos.ident_nr2 AND f_auftragkopf.auftr_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN auftragkopf ON f_auftragkopf.auftr_nr = auftragkopf.ident_nr "
+' auftragkopf + auftragpos  + teil
+ Public Const auftragkopf_auftragpos_teil = "FROM ( " & "auftragkopf INNER JOIN auftragpos " & "ON auftragkopf.ident_nr = auftragpos.ident_nr1 " & ") " & "INNER JOIN teil ON auftragpos.t_tg_nr = teil.ident_nr "
+'Hole Kundeaufträge (nur ID'S) aus UNIPPS per Datumsfilter
+'Bezeichnung beginnt mit Ersatz; Status <4
+Public Function sql_ersatz_Etiketten_nur_ID(start_datum As Date)
+'SELECT unipps_auftragkopf.ident_nr AS AB_Nr, unipps_auftragkopf.status, unipps_auftragpos.pos_nr, unipps_auftragpos.t_tg_nr, unipps_teil.werkstoff, unipps_teil.en_nr AS spez, unipps_teil.klassifiz AS Typ, unipps_auftragpos.k_teile_nr AS K_Ident
+'FROM (unipps_auftragkopf INNER JOIN unipps_auftragpos ON unipps_auftragkopf.ident_nr = unipps_auftragpos.ident_nr1) INNER JOIN unipps_teil ON unipps_auftragpos.t_tg_nr = unipps_teil.ident_nr
+'WHERE (((unipps_auftragkopf.Status) < 4) And ((unipps_auftragkopf.erstanlage) > Now() - 5) And ((unipps_auftragkopf.klassifiz) Like "Ersatz*"))
+'ORDER BY unipps_auftragkopf.ident_nr, unipps_auftragpos.pos_nr;
+    mysql_select = "SELECT auftragkopf.ident_nr AS AB_Nr,auftragkopf.erstanlage FROM auftragkopf "
+    'datumsformat yyyy-mm-dd
+    start_datum_str = odbc_xl_date(start_datum)
+    'auftragpos.ueb_nr=0 da sonst untergeordnete Positionen mit uebertragen werden (erscheinen als erneute Pos 1)
+ mysql_where = "WHERE auftragkopf.klassifiz like ""Ersatz%""  " & "AND auftragkopf.erstanlage >= " & start_datum_str & " " & "AND auftragkopf.status<4 "          & "ORDER BY auftragkopf.ident_nr ;"
+    'Join aus Konstante oben
+    sql_ersatz_Etiketten_nur_ID = mysql_select & mysql_where
+End Function
+'Hole einen Kundeauftrag (nur ID und anlagedatum) aus UNIPPS per ID
+'Kein Filter auf Ersatz oder Status
+Public Function sql_ersatz_Etiketten_nur_ID_per_ID(auftragkopf_ident_nr As Long)
+    mysql_select = "SELECT auftragkopf.ident_nr AS AB_Nr,auftragkopf.erstanlage FROM auftragkopf "
+ mysql_where =            "WHERE auftragkopf.ident_nr  = """ & auftragkopf_ident_nr & """  ;"
+    'Join aus Konstante oben
+    sql_ersatz_Etiketten_nur_ID_per_ID = mysql_select & mysql_where
+End Function
+'Hole einen Kundeauftrag mit relevanten Infos aus UNIPPS per ID
+'Kein Filter auf Ersatz oder Status
+Public Function sql_ersatz_Etiketten_per_ID(auftragkopf_ident_nr As Long)
+ mysql_select = "SELECT auftragkopf.ident_nr AS AB_Nr,auftragkopf.erstanlage, auftragkopf.status, " & "auftragkopf.sprache, auftragpos.pos_nr, auftragpos.t_tg_nr, " & "teil.werkstoff, teil.en_nr AS Spezifikation, teil.klassifiz AS Typ, " & "auftragpos.k_teile_nr AS K_Ident, auftragpos.Menge, "                 & "auftragpos.k_Typ, auftragpos.k_Zchn_Nr "
+    'auftragpos.ueb_nr=0 da sonst untergeordnete Positionen mit uebertragen werden (erscheinen als erneute Pos 1)
+ mysql_where = "WHERE auftragkopf.ident_nr  = """ & auftragkopf_ident_nr & """  "            & "AND auftragpos.ueb_nr=0 ;"
+    'Join aus Konstante oben
+    sql_ersatz_Etiketten_per_ID = mysql_select & auftragkopf_auftragpos_teil & mysql_where
+End Function
+'Hole Kundeaufträge mit relevanten Infos aus UNIPPS per Datumsfilter
+'Bezeichnung beginnt mit Ersatz; Status <4
+Public Function sql_ersatz_Etiketten(start_datum As Date)
+'SELECT unipps_auftragkopf.ident_nr AS AB_Nr, unipps_auftragkopf.status, unipps_auftragpos.pos_nr, unipps_auftragpos.t_tg_nr, unipps_teil.werkstoff, unipps_teil.en_nr AS spez, unipps_teil.klassifiz AS Typ, unipps_auftragpos.k_teile_nr AS K_Ident
+'FROM (unipps_auftragkopf INNER JOIN unipps_auftragpos ON unipps_auftragkopf.ident_nr = unipps_auftragpos.ident_nr1) INNER JOIN unipps_teil ON unipps_auftragpos.t_tg_nr = unipps_teil.ident_nr
+'WHERE (((unipps_auftragkopf.Status) < 4) And ((unipps_auftragkopf.erstanlage) > Now() - 5) And ((unipps_auftragkopf.klassifiz) Like "Ersatz*"))
+'ORDER BY unipps_auftragkopf.ident_nr, unipps_auftragpos.pos_nr;
+ mysql_select = "SELECT auftragkopf.ident_nr AS AB_Nr,auftragkopf.erstanlage, auftragkopf.status, " & "auftragkopf.sprache, auftragpos.pos_nr, auftragpos.t_tg_nr, " & "teil.werkstoff, teil.en_nr AS Spezifikation, teil.klassifiz AS Typ, " & "auftragpos.k_teile_nr AS K_Ident, auftragpos.Menge, "                 & "auftragpos.k_Typ, auftragpos.k_Zchn_Nr "
+    'datumsformat yyyy-mm-dd
+    start_datum_str = odbc_xl_date(start_datum)
+    'auftragpos.ueb_nr=0 da sonst untergeordnete Positionen mit uebertragen werden (erscheinen als erneute Pos 1)
+ mysql_where = "WHERE auftragkopf.klassifiz  like ""Ersatz%""  " & "AND auftragkopf.erstanlage >= " & start_datum_str & " " & "AND auftragkopf.status<4 " & "AND auftragpos.ueb_nr=0 "          & "ORDER BY auftragkopf.ident_nr, auftragpos.pos_nr ;"
+    'Join aus Konstante oben
+    sql_ersatz_Etiketten = mysql_select & auftragkopf_auftragpos_teil & mysql_where
+End Function
+Public Function sql_ersatz()
+ mysql_select = "SELECT f_auftragkopf.erstanlage,f_auftragkopf.ende_ist, f_auftragkopf.ident_nr AS FA, " & "auftragkopf.klassifiz AS komm_nr, f_auftragkopf.status, f_auftragkopf.typ, " & "adresse.kurzname AS kunde, f_auftragkopf.auftr_nr AS KA, auftragpos.pos_nr AS Pos, " & "auftragpos.lt, f_auftragkopf.losgroesse_soll AS stueck, f_auftragkopf.t_soll, """                           & Now() & """ As eingelesen "
+ mysql_where = "WHERE f_auftragkopf.oa=1 " & "AND auftragkopf.klassifiz  like ""Ersatz%""  " & "AND f_auftragkopf.status<7 "          & "ORDER BY auftragpos.lt ;"
+    sql_ersatz = mysql_select & f_auftragkopf & mysql_where
+End Function
+Public Function sql_offene_Pumpen()
+ mysql_select = "SELECT f_auftragkopf.erstanlage,f_auftragkopf.ende_ist, f_auftragkopf.ident_nr AS FA, " & "auftragkopf.klassifiz AS komm_nr, f_auftragkopf.status, f_auftragkopf.typ, " & "adresse.kurzname AS kunde, f_auftragkopf.auftr_nr AS KA, auftragpos.pos_nr AS Pos, " & "auftragpos.lt, f_auftragkopf.losgroesse_soll AS stueck, f_auftragkopf.t_soll/0.3 as MA, "                           & "auftragkopf.letzte_aenderung,auftragkopf.von, """ & Now() & """ As eingelesen "
+ mysql_where = "WHERE f_auftragkopf.oa=0 " & "AND auftragkopf.klassifiz like ""__.%""  " & "AND f_auftragkopf.status<7 "          & "ORDER BY f_auftragkopf.erstanlage desc;"
+    sql_offene_Pumpen = mysql_select & f_auftragkopf & mysql_where
+End Function
+Public Function sql_offen_und_fgm_seit_datum(start_datum As Date)
+ mysql_select = "SELECT f_auftragkopf.erstanlage,f_auftragkopf.ende_ist, f_auftragkopf.ident_nr AS FA, " & "auftragkopf.klassifiz AS komm_nr, f_auftragkopf.status, f_auftragkopf.typ, " & "adresse.kurzname AS kunde, f_auftragkopf.auftr_nr AS KA, auftragpos.pos_nr AS Pos, " & "auftragpos.lt, f_auftragkopf.losgroesse_soll AS stueck, f_auftragkopf.t_soll/0.3 as MA, """                           & Now() & """ As eingelesen "
+    'datumsformat yyyy-mm-dd
+    start_datum_str = odbc_xl_date(start_datum)
+ mysql_where = "WHERE f_auftragkopf.oa=0 " & "AND auftragkopf.klassifiz like ""__.%""  " & "AND f_auftragkopf.status<8 " & "AND (f_auftragkopf.ende_ist>=" & start_datum_str & " OR f_auftragkopf.ende_ist< {d ""1900-01-01""}) "          & "ORDER BY f_auftragkopf.ende_ist;"
+    sql_offen_und_fgm_seit_datum = mysql_select & f_auftragkopf & mysql_where
+End Function
+Public Function sql_offen_und_fgm_nach_Lieferkw_seit_Lieferkw(start_datum As Date)
+ mysql_select = "SELECT f_auftragkopf.erstanlage,f_auftragkopf.ende_ist, f_auftragkopf.ident_nr AS FA, " & "auftragkopf.klassifiz AS komm_nr, f_auftragkopf.status, f_auftragkopf.typ, " & "adresse.kurzname AS kunde, f_auftragkopf.auftr_nr AS KA, auftragpos.pos_nr AS Pos, " & "auftragpos.lt, f_auftragkopf.losgroesse_soll AS stueck, f_auftragkopf.t_soll/0.3 as MA, """                           & Now() & """ As eingelesen "
+    'datumsformat yyyy-mm-dd
+    start_datum_str = odbc_xl_date(start_datum)
+ mysql_where = "WHERE f_auftragkopf.oa=0 " & "AND auftragkopf.klassifiz like ""__.%""  " & "AND f_auftragkopf.status<8 " & "AND auftragpos.lt>=" & start_datum_str          & " ORDER BY auftragpos.lt;"
+    sql_offen_und_fgm_nach_Lieferkw_seit_Lieferkw = mysql_select & f_auftragkopf & mysql_where
+End Function
+Public Function sql_reparatur()
+ mysql_select = "SELECT f_auftragkopf.erstanlage,f_auftragkopf.ende_ist, f_auftragkopf.ident_nr AS FA, " & "auftragkopf.klassifiz AS komm_nr, f_auftragkopf.status, f_auftragkopf.typ, " & "adresse.kurzname AS kunde, f_auftragkopf.auftr_nr AS KA, auftragpos.pos_nr AS Pos, " & "auftragpos.lt, f_auftragkopf.losgroesse_soll AS stueck, f_auftragkopf.t_soll, "                           & "auftragkopf.letzte_aenderung,auftragkopf.von, """ & Now() & """ As eingelesen "
+ mysql_where = "WHERE f_auftragkopf.oa=0 " & "AND auftragkopf.klassifiz not like ""__.%""  " & "AND f_auftragkopf.status<7 "          & "ORDER BY f_auftragkopf.erstanlage desc;"
+    sql_reparatur = mysql_select & f_auftragkopf & mysql_where
+End Function
+Public Function sql_ersatz_kumuliert()
+ mysql_select = "SELECT auftragpos.lt, ' ' as LT_KW, sum(f_auftragkopf.losgroesse_soll) AS stueck, "                           & "sum(f_auftragkopf.t_soll*24) as FA_h "
+ mysql_where = "WHERE f_auftragkopf.oa=1 " & "AND auftragkopf.klassifiz  like ""Ersatz%""  " & "AND f_auftragkopf.status<7 "          & "group BY auftragpos.lt order BY auftragpos.lt;"
+    sql_ersatz_kumuliert = mysql_select & f_auftragkopf_auftragkopf_auftragpos & mysql_where
+End Function
+'Pumpen_KA/FA seit erstanlagedatum KA_status >0
+' auftragkopf.klassifiz Like "__.%"
+'neue Version mit FA-Termin statt KA-Termin
+'und Filter: f_auftragkopf.t_tg_nr not like "P%" (ohne Prüpfstandsaufträge)
+Public Function sql_pumpen_FA(start_datum As Date) As String
+    Dim start_datum_str$, sql_select$
+    start_datum_str = odbc_xl_date(start_datum)
+    'start_datum_str = "'" & start_datum & "'"
+ sql_select = "SELECT """ & Now() & """ As eingelesen, " & "auftragkopf.klassifiz AS komm_nr, adresse.kurzname AS kunde, " & "auftragkopf.ident_nr as KA,auftragkopf.status as KA_status, auftragpos.pos_nr AS KA_Pos," & "f_auftragkopf.ident_nr AS FA, f_auftragkopf.status as FA_status," & " auftragkopf.erstanlage as UNIPPS_erstanlage,f_auftragkopf.typ,f_auftragkopf.losgroesse_soll AS stueck, " & "f_auftragkopf.ende_soll as lt, '' as LT_KW,f_auftragkopf.t_soll/0.3 as MA, "                           & " auftragkopf.letzte_aenderung, auftragkopf.faktura_datum, auftragkopf.storno_datum "
+ sql_where = " WHERE f_auftragkopf.oa=0 and auftragkopf.klassifiz Like ""__.%"" And auftragkopf.Status > 0" & " And auftragkopf.klassifiz not like ""0-%""" & " And f_auftragkopf.t_tg_nr not like ""P%""" & " And auftragkopf.erstanlage > " & start_datum_str                & " ORDER BY auftragkopf.ident_nr,auftragpos.pos_nr  ;"
+    sql_pumpen_FA = sql_select & f_auftragkopf & sql_where
+End Function
+'Pumpen_KA/FA seit erstanlagedatum KA_status >0
+' auftragkopf.klassifiz Like "__.%"
+'neue Version mit FA-Termin statt KA-Termin
+'und Filter: f_auftragkopf.t_tg_nr not like "P%" (ohne Prüpfstandsaufträge)
+'noch neu: Datum auftragkopf.auftr_datum statt auftragkopf.erstanlage für Ausgabefeld UNIPPS_erstanlage,
+Public Function sql_pumpen_FA_Montageliste(start_datum As Date) As String
+    Dim start_datum_str$, sql_select$
+    start_datum_str = odbc_xl_date(start_datum)
+    'start_datum_str = "'" & start_datum & "'"
+ sql_select = "SELECT """ & Now() & """ As eingelesen, " & "auftragkopf.klassifiz AS komm_nr, adresse.kurzname AS kunde, " & "auftragkopf.ident_nr as KA,auftragkopf.status as KA_status, auftragpos.pos_nr AS KA_Pos," & "f_auftragkopf.ident_nr AS FA, f_auftragkopf.status as FA_status," & " auftragkopf.auftr_datum as UNIPPS_erstanlage,f_auftragkopf.typ,f_auftragkopf.losgroesse_soll AS stueck, " & "f_auftragkopf.ende_soll as lt, '' as LT_KW,f_auftragkopf.t_soll/0.3 as MA,auftragkopf.auftr_datum, "                           & " auftragkopf.letzte_aenderung, auftragkopf.faktura_datum, auftragkopf.storno_datum "
+ sql_where = " WHERE f_auftragkopf.oa=0 and auftragkopf.klassifiz Like ""__.%"" And auftragkopf.Status > 0" & " And auftragkopf.klassifiz not like ""0-%""" & " And f_auftragkopf.t_tg_nr not like ""P%""" & " And auftragkopf.erstanlage > " & start_datum_str                & " ORDER BY auftragkopf.ident_nr,auftragpos.pos_nr  ;"
+    sql_pumpen_FA_Montageliste = sql_select & f_auftragkopf & sql_where
+End Function
+'Pumpen_KA seit erstanlagedatum KA_status >0
+'alte Version mit KA-Termin
+Public Function sql_pumpen_KA(start_datum As Date)
+    Dim start_datum_str$, sql_select$
+    start_datum_str = odbc_xl_date(start_datum)
+    'start_datum_str = "'" & start_datum & "'"
+ sql_select = "SELECT """ & Now() & """ As eingelesen, " & "auftragkopf.klassifiz AS komm_nr, adresse.kurzname AS kunde, " & "auftragkopf.ident_nr as KA,auftragkopf.status as KA_status, auftragpos.pos_nr AS KA_Pos," & "f_auftragkopf.ident_nr AS FA, f_auftragkopf.status as FA_status," & " auftragkopf.erstanlage as UNIPPS_erstanlage,f_auftragkopf.typ,f_auftragkopf.losgroesse_soll AS stueck, " & "auftragpos.lt, '' as LT_KW,f_auftragkopf.t_soll/0.3 as MA, "                           & " auftragkopf.letzte_aenderung, auftragkopf.faktura_datum, auftragkopf.storno_datum "
+ sql_where = " WHERE f_auftragkopf.oa=0 and auftragkopf.klassifiz Like ""__.%"" And auftragkopf.Status > 0" & " And auftragkopf.erstanlage > " & start_datum_str                & " ORDER BY f_auftragkopf.ident_nr ;"
+    sql_pumpen_KA = sql_select & f_auftragkopf & sql_where
+End Function
+'fakturierte oder stornierte pumpen_KA seit datum
+Public Function sql_pumpen_KA_fgm(start_datum As Date)
+    Dim start_datum_str$, sql_select$
+    start_datum_str = odbc_xl_date(start_datum)
+ sql_select = "SELECT auftragkopf.ident_nr, auftragkopf.klassifiz, auftragkopf.erstanlage, auftragkopf.status, " & " auftragkopf.letzte_aenderung, auftragkopf.faktura_datum, auftragkopf.storno_datum "                        & " FROM auftragkopf "
+ sql_where = " WHERE auftragkopf.klassifiz Like ""__.%"" And auftragkopf.Status > 4" & " And (auftragkopf.faktura_datum > " & start_datum_str & "      OR auftragkopf.storno_datum > " & start_datum_str & ")"                & " ORDER BY auftragkopf.erstanlage;"
+    sql_pumpen_KA_fgm = sql_select & sql_where
+End Function
+'Daten mit sql-befehl "sql$" aus UNIPPS in "Tabelle$"  lesen
+Function UNIPPS_Import(sql$, target_rng As Range) As Long
+    Dim dbr As DB_Reader
+    Dim rs As ADODB.Recordset
+    Dim open_err%
+    'Datenbank verbinden
+    Set dbr = New_DB_Reader()
+    dbr.Open_Informix_Connection
+    Set dbr.rs = dbr.open_rs(sql)
+    open_err = dbr.Connection.Errors.count
+    'dbr.test_output
+    'If dbr.rs.RecordCount > 0 And open_err = 0 Then
+    If open_err = 0 Then
+        'Application.StatusBar = "Daten gelesen"
+        dbr.recordset_2_sheet target_rng, dbr.rs, clear:=True, header:=True
+        UNIPPS_Import = dbr.rs.RecordCount
+    Else
+        Application.StatusBar = "Abbruch mit Fehler: " & dbr.Connection.Errors.Item(0).Description
+        Dim msg$
+        msg = dbr.Connection.Errors.Item(0)
+        Set dbr = Nothing
+        UNIPPS_Import = -1
+        Err.Raise 10000, "UNIPPS_Import", msg
+    End If
+    Set dbr.rs = Nothing
+End Function
+'Import in "Tabelle$" nachbearbeiten: KW in Spalte "spalte" aus linker Nachbarspalte berechnen
+Sub get_KW(myrange As Range)
+    Dim line As Long
+    line = 1
+    Do While Not IsEmpty(myrange.Offset(line, -1))
+        myrange.Offset(line, 0) = "'" & KWstr(myrange.Offset(line, -1))   'LT_KW aus LT
+        line = line + 1
     Loop
 End Sub
-Private Sub UserForm_Activate()
-    Update_Form_Before_Showing
-End Sub
-Private Sub UserForm_Initialize()
-    set_globals
-    ok_pressed = False
-    Update_Form_Before_Showing
-End Sub
-Sub Update_Form_Before_Showing()
-    Dim i%
-    'Listbox fuellen
-    print_lb.Clear
-    no_print_lb.Clear
-    For i = 0 To UBound(KA_Id_liste)
-        print_lb.AddItem KA_Id_liste(i)
-    Next
-End Sub
-
-
-================================================================================
-vbform: Auswahl_frm
-================================================================================
-Public ok_pressed As Boolean
-Private Sub ESC_btn_Click()
-        Me.Hide
-        ok_pressed = False
-End Sub
-Private Sub OK_btn_Click()
-        ok_pressed = True
-        Me.Hide
-End Sub
-Private Sub UserForm_Activate()
-    Update_Form_Before_Showing
-End Sub
-Private Sub UserForm_Initialize()
-    set_globals
-    ok_pressed = False
-    Update_Form_Before_Showing
-End Sub
-Sub Update_Form_Before_Showing()
-    'KA_Id_max = get_max_KA_Id
-    KA_Id_min = get_min_KA_Id
-    id_textbox.Value = KA_Id_min
-End Sub
-
-
-================================================================================
-vbmodule: Const_Spalten_Namen
-================================================================================
-'Quellspalten in Sheet 'Input' (Hier wird der UNIPPS-Import zwischengespeichert)
-'Die Konstanten werden verwendet um die Inhalte auf das Print-Sheet zu  uebertragen
-Public Const col_ab_nr = 1
-Public Const col_erstanlage = 2
-Public Const col_status = 3
-Public Const col_sprache = 4
-Public Const col_pos_nr = 5
-Public Const col_t_tg_nr = 6
-Public Const col_werkstoff = 7
-Public Const col_spezifikation = 8
-Public Const col_typ = 9
-Public Const col_k_ident = 10
-Public Const col_menge = 11
-Public Const col_k_Typ = 12
-Public Const col_k_Zchn_Nr = 13
-'Startspalte fuer Teil 2 des Datenimports aus "Teileinfo"
-Public Const start_col_teileinfo = 14
-Public Const col_teil_bezeich = 14
 
 
 <EndofFile>

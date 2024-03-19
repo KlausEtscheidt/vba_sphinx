@@ -8,18 +8,18 @@ import time
 # import tomlkit.toml_file
 import pyparsing as pp
 
-# Basis-Verzeichnis
-my_file = os.path.realpath(__file__) # Welcher File wird gerade durchlaufen
-my_dir = os.path.dirname(my_file)
-parent_dir = os.path.join(my_dir, '..')
-sys.path.insert(0, parent_dir)
-
-# pylint: disable=wrong-import-position
 from vbasphinx.vba_utils.config_reader_toml import ConfigReader
 from vbasphinx.vba_utils.vba_logging import setup_logger
 import vbasphinx.vba_parser.vba_grammar as vbgr
 from vbasphinx.vba_parser.vba_tree_export import export_rst
 import vbasphinx.vba_parser.vba_parser_summary as vbchk
+
+# Basis-Verzeichnis
+# my_file = os.path.realpath(__file__) # Welcher File wird gerade durchlaufen
+# my_dir = os.path.dirname(my_file)
+# parent_dir = os.path.join(my_dir, '..')
+# sys.path.insert(0, parent_dir)
+
 
 log = logging.getLogger()
 
