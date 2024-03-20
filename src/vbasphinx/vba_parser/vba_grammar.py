@@ -52,7 +52,7 @@ vb_typedname = pp.Word(ALL_CHAR, exclude_chars=TYPEDEF_CHAR+"(),'\n")
 # declaration of a const value (only parsed if outside of sub or function)
 # ------------------------------------------------------------------------
 #[ Public | Private ] Const constname [ As type ] = expression
-const_value = pp.Word(pp.printables + " ", exclude_chars="'")
+const_value = pp.Word(pp.printables + ' "', exclude_chars="'")
 const_scope = pp.Opt(PRIV | PUBL | GLOB)
 const_statement = pp.Group(const_scope('scope') + pp.Suppress(CONST)\
                       + vb_typedname('obj_name') + pp.Opt(type_char) +  pp.Opt(type_as)\
@@ -80,7 +80,12 @@ method_scope = pp.Optional(PRIV | PUBL | FRIEND)
 prop_name = vb_typedname('obj_name')
 prop_begin = method_scope('scope') + pp.Opt(STATIC)('Static')\
                             + PROP('method_type')
-prop_params = LPAR + pp.SkipTo(')', include=False)('prop_params') + RPAR
+# plistcont = pp.Word(ALL_CHAR + '.',exclude_chars="(),'\n")
+plistcont = pp.Word(ALL_CHAR + '.,()="')
+prop_params = pp.originalTextFor(pp.nestedExpr())('prop_params')
+# prop_params = pp.nestedExpr(content=plistcont)('prop_params')
+# prop_params = pp.Combine(pp.nestedExpr(opener='(', closer=')'))('prop_params')
+# prop_params = LPAR + pp.SkipTo(')', include=False)('prop_params') + RPAR
 
 prop_get = prop_begin + GET('prop_type') + prop_name + pp.Opt (prop_params) + pp.Opt(type_as)
 prop_let = prop_begin + (SET | LET)('prop_type') + prop_name + prop_params
@@ -140,6 +145,7 @@ def get_method_arguments(_text, _loc, toks):
     '''parse argument list into single arguments'''
     if not toks.method_params:
         return
+    # [ Optional ] [ ByVal | ByRef ] [ ParamArray ] varname [ ( ) ] [ As type ] [ = defaultvalue ]
     vbparam = pp.Group(pp.Opt(OPTIONAL)('opt') + pp.Opt(BYREF|BYVAL)('by') +pp.Opt(PARRAY)\
                     + vb_typedname('param_name') + pp.Opt(type_char) + pp.Opt(type_as)
                     )
