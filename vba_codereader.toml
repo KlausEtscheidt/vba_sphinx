@@ -7,7 +7,7 @@
 # use single backslashes for windows pathes
 # pathes starting with a dot like '.\VBA2Parse' are relativ to the dir current working dir
 
-outdir = '.\tests\data\VBA2Parse'
+outdir = '.\tests\integration\data\VBA2Parse'
 
 # list of Excel-files, whose vba-software should be exported
 # 
@@ -19,8 +19,8 @@ outdir = '.\tests\data\VBA2Parse'
 # which defines a list of files inside >>path<<
 # * as wildcard is allowed
 [[filelist]]
-path = 'V:\Tools\Excel Makros'
-#path = 'C:\Users\Klaus\Documents\_m\Excel-Makros'
+#path = 'V:\Tools\Excel Makros'
+path = 'C:\Users\Klaus\Documents\_m\Excel-Makros'
 files = [
     #'Ersatz_Auftragsverfolgung_Makros.xlam',
     #'Ersatz_Auftragsverfolgung.xlsm',
@@ -29,7 +29,7 @@ files = [
 ]
 
 [[filelist]]
-path = '.\tests\data'
+path = '.\tests\integration\data'
 #path = 'C:\Users\Klaus\Documents\_m\Excel-Makros'
 files = [
     'Testmappe.xl*',

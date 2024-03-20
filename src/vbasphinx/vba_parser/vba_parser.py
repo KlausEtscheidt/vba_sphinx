@@ -1,9 +1,7 @@
 '''parse files with vba source code and store them in rst-format'''
 
 import os
-import sys
 import logging
-import time
 
 # import tomlkit.toml_file
 import pyparsing as pp
@@ -12,14 +10,6 @@ from vbasphinx.vba_utils.config_reader_toml import ConfigReader
 from vbasphinx.vba_utils.vba_logging import setup_logger
 import vbasphinx.vba_parser.vba_grammar as vbgr
 from vbasphinx.vba_parser.vba_tree_export import export_rst
-import vbasphinx.vba_parser.vba_parser_summary as vbchk
-
-# Basis-Verzeichnis
-# my_file = os.path.realpath(__file__) # Welcher File wird gerade durchlaufen
-# my_dir = os.path.dirname(my_file)
-# parent_dir = os.path.join(my_dir, '..')
-# sys.path.insert(0, parent_dir)
-
 
 log = logging.getLogger()
 
@@ -56,11 +46,17 @@ def strip_comments(fpath):
     return outlines
 
 def parse_file(fpath):
-    '''parses one vba
+    '''parses one vba file
 
     Args:
         fpath (str): file to parse
     '''
+
+    _, name_ext = os.path.split(fpath)
+    # name, _ = os.path.splitext(name_ext)
+    log.error('\n\nstart to parse: %s\n',name_ext)
+    vbgr.currently_parsed_file = fpath
+
     try:
         text = strip_comments(fpath)
         erg = vbgr.vbagramm.parse_string(text)
@@ -70,7 +66,6 @@ def parse_file(fpath):
         log.error('found %s \n',err.line)
         log.error('in line no: %d\n', err.lineno)
         return None
-        # raise err
     return erg
 
 def run():
@@ -85,23 +80,11 @@ def run():
     cfg = ConfigReader('vba_parser.toml')
     files2process = cfg.getfiles('filelist')
     outdir = cfg.getdir('outdir')
-    start = time.time()
-    for infile in files2process:
-        _, name_ext = os.path.split(infile)
-        name, _ = os.path.splitext(name_ext)
-        log.error('\n\nstart to parse: %s\n',name_ext)
 
-        vbgr.currently_parsed_file = infile
+    for infile in files2process:
         tree = parse_file(infile)
         if tree:
-            export_rst(tree, outdir, name)
-            vbchk.export_summary(tree, name)
-    print (time.time() -start)
-    try:
-        vbchk.check_summary()
-        # vbchk.write_summary()
-    except vbchk.VBAParserCheckExc as err:
-        print(err)
+            export_rst(tree, outdir, infile)
 
 if __name__ == '__main__':
     run()

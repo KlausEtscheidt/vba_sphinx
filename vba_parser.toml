@@ -7,7 +7,7 @@
 # use single backslashes for windows pathes
 # pathes starting with a dot like '.\VBA2Parse' are relativ to the dir current working dir
 
-outdir = '.\tests\data\parsed'
+outdir = '.\tests\integration\data\parsed'
 #outdir = '.\sphynx_vba_domain'
 
 # list of txt-files with vba-code, which should be parsed
@@ -21,7 +21,7 @@ outdir = '.\tests\data\parsed'
 # * as wildcard is allowed
 [[filelist]]
 #path = 'V:\E-MAIL\Dr Etscheidt\Software_entwicklung\_doku\sphinx_vba\data\VBA2Parse'
-path = '.\tests\data\VBA2Parse'
+path = '.\tests\integration\data\VBA2Parse'
 # path = 'C:\Users\Klaus\Documents\_m\Excel-Makros'
 files = [
     #'KE_Tools Win10 V2.txt',

@@ -4,7 +4,7 @@ from  vbasphinx.vba_parser import vba_parser
 from  build_sphinx_doku import buildit
 
 #AccessReader.run()
-# ExcelReader.run()
+#ExcelReader.run()
 
-#vba_parser.run()
-buildit('html', './tests/sphinx')
+# vba_parser.run()
+buildit('html', './tests/integration/sphinx')

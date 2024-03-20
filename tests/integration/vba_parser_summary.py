@@ -11,6 +11,7 @@
 '''
 
 import json
+import os
 
 files = {}
 
@@ -19,8 +20,12 @@ JSONFILE = './tests/vba_vorgabe.json'
 class VBAParserCheckExc(Exception):
     '''class for exceptions'''
 
-def export_summary(tree, name):
+def export_summary(tree, fullpath):
     '''Zusammenfassung der wichtigsten Knoten erzeugen'''
+
+    _, name_ext = os.path.split(fullpath)
+    name, _ = os.path.splitext(name_ext)
+
     new_file = {}
     files[name] = new_file
     for module in tree.vbamodules:
@@ -44,7 +49,7 @@ def check_summary():
                 write_summary()
             else:
                 raise VBAParserCheckExc(f'Keine Daten für File {fname} in Referenzdatei.')
-            
+
         ref_file = ref[fname]
 
         for modname, module in file.items():

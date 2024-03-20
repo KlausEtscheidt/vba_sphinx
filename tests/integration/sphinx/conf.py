@@ -17,7 +17,7 @@ htmlhelp_basename = project
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon',
-              'sphinx_rtd_theme', 'myst_parser', 'vba']
+              'sphinx_rtd_theme', 'myst_parser', 'vbasphinx.vba_domain']
 
 # templates_path = ['_templates']
 # exclude_patterns = []

@@ -150,14 +150,18 @@ def export_module(module):
         direc.rst_out()
 
 
-def export_rst(topnode, exportdir, filename):
+def export_rst(topnode, exportdir, fullpath):
     '''exports parsing result tree to rst outfile
 
     Args:
         topnode (ParseResults): top node of the parsed structure
         exportdir (str): dir to export to
-        filename (str): filename (without ext) of the VBA-source (Exel file, etc)
+        fullpath (str): path to VBA-source (Exel file, etc)
     '''
+
+    _, name_ext = os.path.split(fullpath)
+    filename, _ = os.path.splitext(name_ext)
+
     # global outfile, level # pylint: disable=global-statement
     outpath = os.path.join(exportdir, filename + '.rst')
 
@@ -173,5 +177,5 @@ def export_rst(topnode, exportdir, filename):
         direc.rst_out()
         for module in topnode.vbamodules:
             export_module(module)
-            
-    log.info('Rst File %s geschrieben', outpath)
+
+    log.info('Rest File %s geschrieben', outpath)
