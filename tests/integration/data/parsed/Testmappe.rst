@@ -3,7 +3,6 @@ Testmappe
 
 .. vba:module:: Testmappe
 
-
    .. vba:vb_office_obj:: Tabelle1
 
       Software in Tabelle
@@ -71,7 +70,6 @@ Testmappe
 
       .. vba:vbsub:: xx()
          :scope: Public
-
 
 
 

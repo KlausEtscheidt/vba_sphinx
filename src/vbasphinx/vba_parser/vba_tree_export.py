@@ -48,10 +48,12 @@ class Directive:
             if vb_type:
                 self.outfile.write(f'{indent}:returns:\n')
                 self.outfile.write(f'{indent}:returntype: {vb_type}\n')
-            
         self.outfile.write('\n')
 
     def __docstring_rst_out(self):
+        if not self.node.docstrings:
+            return
+
         self.outfile.write('\n')
         indent = ' '*3*(self.level+1)
         for doc in self.node.docstrings:
@@ -74,7 +76,7 @@ class Directive:
             self.direc_arg += self.node.vb_type_char
         # add parameterlist for sub and function
         if self.direc_name in ('vbsub', 'vbfunc'):
-            self.direc_arg += '(' + self.node.method_params + ')'
+            self.direc_arg += self.node.method_params
         # add 'As type' if exists
         if self.node.vb_type_as:
             self.direc_arg += ' As ' + self.node.vb_type_as
@@ -84,9 +86,9 @@ class Directive:
 
 def export_module(module):
     '''writes directive for module and all its entities to rst outfile'''
-    log.info('\n%s : %s', module.module_type, module.obj_name)
+    log.info('\n%s : %s', module['module_type'], module['obj_name'])
     Directive.level = 1
-    direc = Directive(module, module.module_type, module.obj_name)
+    direc = Directive(module, module['module_type'], module['obj_name'])
     direc.rst_out()
     Directive.level = 2
 

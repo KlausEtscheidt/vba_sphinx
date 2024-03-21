@@ -70,12 +70,12 @@ def test_params(proptxt):
 # [ Private | Public | Friend ] [ Static ] Sub name [ ( arglist ) ]
 # [Public | Private | Friend] [ Static ] Function name [ ( arglist ) ] [ As type ]
 @pytest.mark.parametrize("methtxt", [
+    "Function mname$(i%, x As String)",
     "Private Sub mname()",
-    "Public Static Function mname(i%) As Boolean",
+    "Public Static Function mname(i%, we²rt$) As Boolean",
     "Friend Function mname(i%) As Boolean",
     "Function mname(i%) As Boolean",
     "Static Function mname(i%)",
-    "Function mname$(i%, x as String)",
 ])
 
 def test_method_statement(methtxt):

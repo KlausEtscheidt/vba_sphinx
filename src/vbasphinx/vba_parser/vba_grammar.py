@@ -45,7 +45,7 @@ type_as = pp.Suppress(AS + pp.Opt(NEW)) + vbtype('vb_type_as')
 # typedef per special char like "dim x%""
 type_char = pp.Char(TYPEDEF_CHAR)('vb_type_char')
 
-# name of const, var, property, sub, function with optional char for type 
+# name of const, var, property, sub, function with optional char for type
 vb_typedname = pp.Word(ALL_CHAR, exclude_chars=TYPEDEF_CHAR+"(),'\n")
 
 
@@ -75,16 +75,10 @@ var_statement = pp.Group(var_scope('scope') + not_method\
 # [ Public | Private | Friend ] [ Static ] Property Set name ( [ arglist ], reference )
 # [ Public | Private | Friend ] [ Static ] Property Let name ( [ arglist ], value )
 method_scope = pp.Optional(PRIV | PUBL | FRIEND)
-# prop_name = pp.Word(ALL_CHAR, exclude_chars='(')('prop_name') + pp.Opt(type_char)
-# prop_name = pp.Word(ALL_CHAR, exclude_chars='(')('obj_name')
 prop_name = vb_typedname('obj_name')
 prop_begin = method_scope('scope') + pp.Opt(STATIC)('Static')\
                             + PROP('method_type')
-# plistcont = pp.Word(ALL_CHAR + '.',exclude_chars="(),'\n")
-plistcont = pp.Word(ALL_CHAR + '.,()="')
 prop_params = pp.originalTextFor(pp.nestedExpr())('prop_params')
-# prop_params = pp.nestedExpr(content=plistcont)('prop_params')
-# prop_params = pp.Combine(pp.nestedExpr(opener='(', closer=')'))('prop_params')
 # prop_params = LPAR + pp.SkipTo(')', include=False)('prop_params') + RPAR
 
 prop_get = prop_begin + GET('prop_type') + prop_name + pp.Opt (prop_params) + pp.Opt(type_as)
@@ -99,8 +93,7 @@ prop = prop_statement + prop_content
 # [ Private | Public | Friend ] [ Static ] Sub name [ ( arglist ) ]
 # [Public | Private | Friend] [ Static ] Function name [ ( arglist ) ] [ As type ]
 method_types = SUB | FUNC
-method_params = pp.Opt(LPAR + pp.SkipTo(')', include=False)('method_params') + RPAR) |\
-                pp.Opt(LPAR + RPAR)
+method_params = pp.Opt(pp.originalTextFor(pp.nestedExpr())('method_params'))
 method_statement = pp.Group(method_scope('scope')  + pp.Opt(STATIC)('Static')\
             + method_types('method_type') \
             + vb_typedname('obj_name') + pp.Opt(type_char)\
@@ -149,11 +142,12 @@ def get_method_arguments(_text, _loc, toks):
     vbparam = pp.Group(pp.Opt(OPTIONAL)('opt') + pp.Opt(BYREF|BYVAL)('by') +pp.Opt(PARRAY)\
                     + vb_typedname('param_name') + pp.Opt(type_char) + pp.Opt(type_as)
                     )
-    vbparameter = pp.delimited_list(vbparam, delim=',')
+    vbparameter = LPAR + pp.Opt(pp.delimited_list(vbparam, delim=',')) + RPAR
     erg = vbparameter.parse_string(toks.method_params)
-    # insert node in result tree
-    toks['param_detail'] = erg
-    toks.append(erg)
+    # insert node in result tree if not empty ()
+    if erg:
+        toks['param_detail'] = erg
+        toks.append(erg)
     pass
 
 def get_docs_before_item(text, loc, toks):
