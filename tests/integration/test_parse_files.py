@@ -1,7 +1,10 @@
-'''test modul'''
+'''parsed alle files aus vba_parser.toml
 
+vergleicht das Ergebnis mit den Werten aus vba_vorgabe.json'''
+import sys
 from vbasphinx.vba_utils.config_reader_toml import ConfigReader
 from  vbasphinx.vba_parser import vba_parser
+# sys.path.append('./tests/integration')
 import vba_parser_summary as vbchk
 
 cfg = ConfigReader('vba_parser.toml')

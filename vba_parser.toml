@@ -29,5 +29,5 @@ files = [
     #'Ersatz_Auftragsverfolgung.txt',
     #'Ersatz_Etiketten Win10.txt',
     'Testmappe.txt',
-    '*.txt',
+    #'*.txt',
 ]
