@@ -134,16 +134,27 @@ vbamodule = pp.Group(module_header + module_content + module_end)
 # -------------------------------------------------------------------------------------
 vbagramm = pp.ZeroOrMore(vbamodule('vbamodules*')) + EOF
 
+
+# -------------------------------------------------------------------------------------
+# method arguments (parsed by get_method_arguments, when found method_params)
+# -------------------------------------------------------------------------------------
+# [ Optional ] [ ByVal | ByRef ] [ ParamArray ] varname [ ( ) ] [ As type ] [ = defaultvalue ]
+end_param = RPAR | pp.Char(',')
+vbparam_default = pp.SkipTo(end_param, include=False)('value')
+vbparam = pp.Group(pp.Opt(OPTIONAL)('opt') + pp.Opt(BYREF|BYVAL)('by') +pp.Opt(PARRAY)
+                + vb_typedname('param_name') + pp.Opt(type_char) + pp.Opt(LPAR + RPAR)
+                + pp.Opt(type_as) + pp.Opt(EQUAL + vbparam_default) + end_param)
+vbparameter = LPAR + pp.ZeroOrMore(vbparam)
+
 def get_method_arguments(_text, _loc, toks):
     '''parse argument list into single arguments'''
     if not toks.method_params:
         return
-    # [ Optional ] [ ByVal | ByRef ] [ ParamArray ] varname [ ( ) ] [ As type ] [ = defaultvalue ]
-    vbparam = pp.Group(pp.Opt(OPTIONAL)('opt') + pp.Opt(BYREF|BYVAL)('by') +pp.Opt(PARRAY)\
-                    + vb_typedname('param_name') + pp.Opt(type_char) + pp.Opt(type_as)
-                    )
-    vbparameter = LPAR + pp.Opt(pp.delimited_list(vbparam, delim=',')) + RPAR
-    erg = vbparameter.parse_string(toks.method_params)
+    try:
+        erg = vbparameter.parse_string(toks.method_params)
+    except pp.ParseException as err:
+        print(err)
+        return
     # insert node in result tree if not empty ()
     if erg:
         toks['param_detail'] = erg
@@ -223,7 +234,7 @@ def nop_err(_text, _loc, _expr, _exc, _cache):
 def print_all_err(_text, _loc, expr, exc, _cache):
     '''logs message when expression was not found (for debugging)'''
     log.error('\n\n %s\n', currently_parsed_file)
-    log.error('Fehler: %s\nin zeile %d gefunden:\n%s', exc.msg, exc.lineno, exc.line)
+    #log.error('Fehler: %s\nin zeile %d gefunden:\n%s', exc.msg, exc.lineno, exc.line)
     log.error('nicht gefunden: %s\n', expr.customName)
     # loc_min = max(0, loc-100)
     # loc_max = min(len(text)-1, loc+100)
@@ -246,7 +257,11 @@ vbagramm.set_debug_actions(print_search,print_finished,print_all_err)
 # const_statement.set_debug_actions(print_search,print_found,print_all_err)
 # var_statement.set_debug_actions(print_search,print_found,print_all_err)
 #method_statement.set_debug_actions(print_search,print_found,print_all_err)
+# method_params.set_debug_actions(print_search,print_found,print_all_err)
 
 # skip targets
 # DIVIDER.set_debug_actions(print_search,print_found,print_all_err)
 # EOF.set_debug_actions(print_search,print_found,print_all_err)
+# vbparam.set_debug_actions(print_search,print_found,print_all_err)
+# end_param.set_debug_actions(print_search,print_found,print_all_err)
+

@@ -88,10 +88,32 @@ def test_var_statement(get_var_data):
 
 
 #######################################################
+# test property exports
+@pytest.fixture(params=[
+    'Property Let name(s)',
+    'Private Property Get name (xyz() As String = "asd") As Integer',
+    'Public Property Set name (i%, b As Int)',
+    ])
+def get_prop_data(request):
+    data = [
+    '\n',
+    ' As Integer\n         :scope: Private\n',
+    '\n         :scope: Public\n',
+    ]
+    return request.param, data[request.param_index]
+
+def test_prop_statement(get_prop_data):
+    toparse, resultstring = get_prop_data
+    p_res = vbgr.prop_statement.parse_string(toparse)
+    module = get_dummy_module('props', p_res.props)
+    export_module_test(module, 'prop', resultstring)
+
+#######################################################
 # test method exports
 @pytest.fixture(params=[
-    'Function name$(i%, x As String)',
+    'Function name$(i%, x() As String)',
     'Private Sub name()',
+    'Private Sub name(y%=23+3)',
     'Public Static Function name(i%, we²rt$) As Boolean',
     'Friend Function name(i%) As Boolean',
     'Function name(i%) As Boolean',
@@ -99,14 +121,18 @@ def test_var_statement(get_var_data):
     ])
 def get_method_data(request):
     data = [
-    ('func', '$(i%, x As String)\n\n         :arg % i:\n         :arg String x:\n         :returns:\n         :returntype: $\n\n'),
+    ('func', '$(i%, x() As String)\n\n         :arg % i:\n         :arg String x:\n'
+                + '         :returns:\n         :returntype: $\n\n'),
     ('sub', '()\n         :scope: Private\n\n\n'),
-    ('func', '(i%, we²rt$) As Boolean\n         :scope: Public\n         :static:\n\n         :arg % i:\n         :arg $ we²rt:\n' 
-        + '         :returns:\n         :returntype: Boolean\n\n'),
-    ('func', '(i%) As Boolean\n         :scope: Friend\n\n         :arg % i:\n         :returns:\n         :returntype: Boolean\n\n'),
-    ('func', '(i%) As Boolean\n\n         :arg % i:\n         :returns:\n         :returntype: Boolean\n\n'),
+    ('sub', '(y%=23+3)\n         :scope: Private\n\n         :arg % y:\n\n'),
+    ('func', '(i%, we²rt$) As Boolean\n         :scope: Public\n         :static:\n\n'
+                + '         :arg % i:\n         :arg $ we²rt:\n'
+                + '         :returns:\n         :returntype: Boolean\n\n'),
+    ('func', '(i%) As Boolean\n         :scope: Friend\n\n         :arg % i:\n         :returns:\n'
+                + '         :returntype: Boolean\n\n'),
+    ('func', '(i%) As Boolean\n\n         :arg % i:\n         :returns:\n'
+                + '         :returntype: Boolean\n\n'),
     ('func', '(i%)\n         :static:\n\n         :arg % i:\n\n'),
-
     ]
     ftype, resultstring = data[request.param_index]
     return request.param, ftype, resultstring

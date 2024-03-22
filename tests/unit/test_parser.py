@@ -9,7 +9,7 @@ import vbasphinx.vba_parser.vba_grammar as vbgr
 def parse(grammar, txt):
     try:
         p_res = grammar.parse_string(txt)
-    except:
+    except Exception as err:
         p_res = None
     assert isinstance(p_res, ParseResults)
     return p_res
@@ -59,7 +59,7 @@ def test_var(vartxt):
     "Property Let pname(s)",
 ])
 
-def test_params(proptxt):
+def test_props(proptxt):
     '''property statements'''
     p_res = parse(vbgr.prop, proptxt + ' lala\n End Property')
     assert isinstance(p_res['props'][0], ParseResults)
@@ -67,17 +67,57 @@ def test_params(proptxt):
     assert prop.obj_name == 'pname'
     assert prop.prop_type in ('Get', 'Let', 'Set')
 
+
+#######################################################
+# test method argument lists
+# [ Optional ] [ ByVal | ByRef ] [ ParamArray ] varname [ ( ) ] [ As type ] [ = defaultvalue ]
+@pytest.fixture(params=[
+    '(xyz() As String = "asd", myint As Integer)',
+    '(Optional xyz%() = "asd")',
+    '(myint%)',
+    '(ByVal ParamArray myint%)',
+    ])
+def get_method_param_data(request):
+    # for each test data is a list of tuples(name,type_char,type_as,default)
+    # one tuple for each arg in method argument lists
+    data = [
+    [('xyz', '', 'String', '"asd"'),('myint', '', 'Integer', '')],
+    [('xyz', '%', '', '"asd"')],
+    [('myint', '%', '', '')],
+    [('myint', '%', '', '')],
+    ]
+    return request.param, data[request.param_index]
+
+def test_method_params(get_method_param_data):
+    toparse, resultdata = get_method_param_data
+    # p_res = parse(vbgr.prop_params, toparse)
+    p_res = parse(vbgr.method_params, toparse)
+    assert 'param_detail' in p_res.keys()
+    assert len(p_res['param_detail']) == len(resultdata)
+    for i, arg_desc in enumerate(resultdata):
+        p_res_arg = p_res['param_detail'][i]
+        assert arg_desc[0] == p_res_arg.param_name
+        if 'vb_type_char' in p_res_arg.keys():
+            assert arg_desc[1] == p_res_arg.vb_type_char
+        if 'vb_type_as' in p_res_arg.keys():
+            assert arg_desc[2] == p_res_arg.vb_type_as
+        if 'value' in p_res_arg.keys():
+            assert arg_desc[3] == p_res_arg.value.strip()
+
+
+#####################################
+# test method statements
 # [ Private | Public | Friend ] [ Static ] Sub name [ ( arglist ) ]
 # [Public | Private | Friend] [ Static ] Function name [ ( arglist ) ] [ As type ]
 @pytest.mark.parametrize("methtxt", [
-    "Function mname$(i%, x As String)",
+    "Function mname$(i%, x() As String)",
     "Private Sub mname()",
+    "Sub mname()",
     "Public Static Function mname(i%, we²rt$) As Boolean",
     "Friend Function mname(i%) As Boolean",
     "Function mname(i%) As Boolean",
     "Static Function mname(i%)",
 ])
-
 def test_method_statement(methtxt):
     '''method statements'''
     p_res = parse(vbgr.method_statement, methtxt)
@@ -101,7 +141,4 @@ Public ok_pressed As Boolean
     assert p_res[0].module_type == 'vbmodule'
 
 if __name__ == '__main__':
-    # vbgr.currently_parsed_file = 'xxx'
-    # log.setLevel(logging.DEBUG)
-    # setup_logger('./vba_parser.log')
-    test_var()
+    pass

@@ -1,10 +1,8 @@
 
    .. vba:dummy:: testmodul
 
-      .. vba:vbfunc:: mname$(i%, x As String)
+      .. vba:vbfunc:: name(i%)
+         :static:
 
          :arg % i:
-         :arg String x:
-         :returns:
-         :returntype: $
 
