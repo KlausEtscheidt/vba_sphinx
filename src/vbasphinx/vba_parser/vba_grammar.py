@@ -16,7 +16,7 @@ TYPEDEF_CHAR = '%&^@!#$'
 # to make sure that we don't miss a token
 ALL_CHAR = pp.alphas + pp.alphas8bit + pp.punc8bit + pp.printables
 
-LPAR, RPAR, EQUAL, COLON = map (pp.Suppress, '()=:')
+LPAR, RPAR, EQUAL, COLON, COMMA = map (pp.Suppress, '()=:,')
 
 # Keywords
 PRIV, PUBL, FRIEND, STATIC = map (pp.Keyword, ['Private', 'Public', 'Friend', 'Static'])
@@ -65,9 +65,9 @@ const_statement = pp.Group(const_scope('scope') + pp.Suppress(CONST)\
 var_scope = PRIV | PUBL | GLOB | DIM
 var_subscript = LPAR + pp.SkipTo(')', include=False) + RPAR
 not_method = ~ ( SUB | FUNC | STATIC | PROP)
-var_statement = pp.Group(var_scope('scope') + not_method\
-                + pp.Opt(WITH)('withevents') + vb_typedname('obj_name') + pp.Opt(type_char)\
-                + pp.Opt(var_subscript)('subscripts') + pp.Opt(type_as))('vars*')
+var_decl = pp.Group(pp.Opt(WITH)('withevents') + vb_typedname('obj_name') + pp.Opt(type_char)\
+                + pp.Opt(var_subscript)('subscripts') + pp.Opt(type_as) + pp.Opt(COMMA))('var_decl*')
+var_statement = pp.Group(var_scope('scope') + not_method + pp.OneOrMore(var_decl))('vars*')
 
 # properties
 # ------------------------------------------------------------------------
@@ -184,8 +184,9 @@ def get_docs_before_item(text, loc, toks):
             docs.insert(0,line[2:])
         lnr -= 1
     # insert node in result tree
-    toks[0]['docstrings'] = docs
-    toks[0].append(docs)
+    if docs:
+        toks[0]['docstrings'] = docs
+        toks[0].append(docs)
 
 def get_docs_after_modheader(text, loc, toks):
     '''inserts docstrings for modules into result tree.'''

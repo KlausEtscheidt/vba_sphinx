@@ -7,6 +7,7 @@ from pyparsing import ParseResults
 import vbasphinx.vba_parser.vba_grammar as vbgr
 
 def parse(grammar, txt):
+    p_res = grammar.parse_string(txt)
     try:
         p_res = grammar.parse_string(txt)
     except Exception as err:
@@ -31,7 +32,7 @@ def test_const(consttxt):
 # Public [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ]
 # [ , [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ]] . . .
 @pytest.mark.parametrize("vartxt", [
-    "Public varname As Boolean",
+    "Public varname As Boolean, i%",
     "Public varname%",
     "Dim varname$",
     "Dim WithEvents varname$",
@@ -42,6 +43,7 @@ def test_const(consttxt):
 def test_var(vartxt):
     '''var statements'''
     p_res = parse(vbgr.module_entity, vartxt)
+    # p_res = parse(vbgr.var_statement, vartxt)
     assert isinstance(p_res['vars'][0], ParseResults)
     var = p_res['vars'][0]
     assert var.obj_name == 'varname'
