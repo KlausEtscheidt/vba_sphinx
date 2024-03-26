@@ -7,12 +7,12 @@ from pyparsing import ParseResults
 import vbasphinx.vba_parser.vba_grammar as vbgr
 
 def parse(grammar, txt):
-    p_res = grammar.parse_string(txt)
+    # p_res = grammar.parse_string(txt)
     try:
         p_res = grammar.parse_string(txt)
     except Exception as err:
         p_res = None
-    assert isinstance(p_res, ParseResults)
+    assert isinstance(p_res, ParseResults), f"couldn't parse\n<<{txt}>>"
     return p_res
 
 #[ Public | Private ] Const constname [ As type ] = expression
@@ -29,24 +29,59 @@ def test_const(consttxt):
     const = p_res['const'][0]
     assert const.obj_name == 'cname'
 
+#######################################################
+# test parsing of var statements
 # Public [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ]
 # [ , [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ]] . . .
-@pytest.mark.parametrize("vartxt", [
-    "Public varname As Boolean, i%",
-    "Public varname%",
-    "Dim varname$",
-    "Dim WithEvents varname$",
-    "Global WithEvents varname As Double",
-    #"Public Const WithEvents varname$",
-])
+@pytest.fixture(params=[
+    "Public varname As Boolean, i%\nPrivate x As Double, y%",
+    "Public varname As Boolean, i%\nProperty Get name",
+    "Public name As Boolean",
+    'Global WithEvents name As Double',
+    "Dim dobj As New DataObject",
+    ])
+def get_var_data(request):
+    data = [
+    #(scope,(withevents, varname, type_char, type_as) , ( ),...)
+    ('Public',(0, 'varname','','Boolean'),(0, 'i', '%', '')),
+    ('Public',(0, 'varname','','Boolean'),(0, 'i', '%', '')),
+    ('Public',(0, 'name','','Boolean')),
+    ('Global',(1, 'name','','Double')),
+    ('Dim',(0, 'dobj','','DataObject')),
+    ]
+    return request.param, data[request.param_index]
 
-def test_var(vartxt):
+def test_var(get_var_data):
     '''var statements'''
-    p_res = parse(vbgr.module_entity, vartxt)
-    # p_res = parse(vbgr.var_statement, vartxt)
+    toparse, results = get_var_data
+    p_res = parse(vbgr.module_entity, toparse)
     assert isinstance(p_res['vars'][0], ParseResults)
     var = p_res['vars'][0]
-    assert var.obj_name == 'varname'
+    assert var.scope == results[0] #check scope
+    assert len(var.var_decls) == len(results) - 1 # check parsed number of var declarations
+    for nr, decl in enumerate(var.var_decls):
+        result = results[nr + 1]
+        if result[0]:
+            assert decl.withevents == 'WithEvents'
+        assert decl.obj_name == result[1]
+        assert decl.vb_type_char == result[2]
+        assert decl.vb_type_as == result[3]
+
+@pytest.fixture(params=[
+    "Public Property Get name\nEnd Property",
+    "Public Sub name As Boolean\nEnd Sub",
+    ])
+def get_non_var_statement(request):
+    return request.param
+
+def test_notvar(get_non_var_statement):
+    '''test no var statements'''
+    toparse = get_non_var_statement
+    p_res = parse(vbgr.target_entities, toparse)
+    # p_res = parse(vbgr.module_entity, toparse)
+    # assert not isinstance(p_res['vars'][0], ParseResults)
+    assert not 'vars' in p_res.keys()
+    pass
 
 # [ Optional ] [ ByVal | ByRef ] [ ParamArray ] varname [ ( ) ] [ As type ] [ = defaultvalue ]
 
@@ -137,7 +172,7 @@ vbmodule: Modul1
 '! comment\n
 Public ok_pressed As Boolean
 <EndofFile>
-    """
+"""
     p_res = parse(vbgr.vbamodule, txt)
     assert p_res[0].obj_name == 'Modul1'
     assert p_res[0].module_type == 'vbmodule'

@@ -13,4 +13,4 @@ from  build_sphinx_doku import buildit
 #ExcelReader.run()
 
 vba_parser.run()
-buildit('html', './tests/integration/sphinx')
+# buildit('html', './tests/integration/sphinx')

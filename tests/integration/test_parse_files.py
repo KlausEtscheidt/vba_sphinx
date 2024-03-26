@@ -1,4 +1,4 @@
-'''parsed alle files aus vba_parser.toml
+'''parses all files from vba_parser.toml
 
 vergleicht das Ergebnis mit den Werten aus vba_vorgabe.json'''
 import sys

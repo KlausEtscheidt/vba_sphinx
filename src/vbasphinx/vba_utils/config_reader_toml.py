@@ -83,8 +83,10 @@ class ConfigReader:
         for flist in self.toml[tomltoken]:
             my_dir = flist['path']
             my_dir = os.path.realpath(my_dir) # if my_dir starts with '.'
-            if not os.path.isdir(my_dir):
-                raise ConfigReaderException(f'directory >>{my_dir})'
+            # if list of files is not empty, check if dir exists
+            if flist['files']:
+                if not os.path.isdir(my_dir):
+                    raise ConfigReaderException(f'directory >>{my_dir})'
                                     + '<< does not exist. check your configuration (toml-file).')
 
             for fname in flist['files']:

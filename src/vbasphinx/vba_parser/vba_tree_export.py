@@ -1,11 +1,26 @@
 '''exports parsing result tree to rst outfile'''
 import os
 import logging
+from dataclasses import dataclass
 
 log = logging.getLogger()
 
 # pylint: disable=global-statement, invalid-name
 # pylint: enable=global-statement, invalid-name
+
+@dataclass
+class VbModule:
+    module_type: str
+    obj_name: str
+
+@dataclass
+class VbVariable:
+    scope: str
+    obj_name: str
+    vb_type_char: str
+    vb_type_as: str
+    withevents: str
+    subscripts: str
 
 class Directive:
 
@@ -13,6 +28,17 @@ class Directive:
     outfile = None
 
     def __init__(self, node, name, argument, complete=False):
+        '''init
+
+        stores some properties
+
+        Args:
+            node (ParseResults or VbVariable): object, which should be written as directive
+            name (str): name of sphinx directive
+            argument (str): argument of sphinx directive
+            complete (bool, optional): if true, argument will be completed
+                with argumentlist of sub/function and type. Defaults to False.
+        '''
         self.node = node
         self.direc_name = name
         self.direc_arg = argument
@@ -36,6 +62,7 @@ class Directive:
             self.__arglist_rst_out()
 
     def __arglist_rst_out(self):
+        '''write list of arguments (only for subs and functions)'''
         self.outfile.write('\n')
         indent = ' '*3*(self.level+1)
         for arg in self.node.param_detail:
@@ -51,7 +78,7 @@ class Directive:
         self.outfile.write('\n')
 
     def __docstring_rst_out(self):
-        if not self.node.docstrings:
+        if not hasattr(self.node, 'docstrings'):
             return
 
         self.outfile.write('\n')
@@ -63,15 +90,15 @@ class Directive:
 
     def __options_rst_out(self):
         indent = ' '*3*(self.level+1)
-        if self.node.scope:
+        if hasattr(self.node, 'scope') and self.node.scope:
             self.outfile.write(f'{indent}:scope: {self.node.scope}\n')
-        if self.node.withevents:
+        if hasattr(self.node, 'withevents') and self.node.withevents:
             self.outfile.write(f'{indent}:withevents:\n')
-        if self.node.Static:
+        if hasattr(self.node, 'Static') and self.node.Static:
             self.outfile.write(f'{indent}:static:\n')
 
     def __complete_argument(self):
-        '''adds argumetlist and type to the name'''
+        '''adds argumentlist, type and value to the name if necessary'''
         if self.node.vb_type_char: # add char for type like in Dim i%
             self.direc_arg += self.node.vb_type_char
         # add parameterlist for sub and function
@@ -86,9 +113,10 @@ class Directive:
 
 def export_module(module):
     '''writes directive for module and all its entities to rst outfile'''
-    log.info('\n%s : %s', module['module_type'], module['obj_name'])
+    my_module = VbModule(module['module_type'], module['obj_name'])
+    log.info('\n%s : %s', my_module.module_type, my_module.obj_name)
     Directive.level = 1
-    direc = Directive(module, module['module_type'], module['obj_name'])
+    direc = Directive(my_module, my_module.module_type, my_module.obj_name)
     direc.rst_out()
     Directive.level = 2
 
@@ -99,8 +127,17 @@ def export_module(module):
         direc.rst_out()
 
     log.info('       %d glob. Variable gefunden:', len(module.vars))
+    # Every var statement can contain multiple var declarations with a common scope
+    # So first, we store them as list of VbVariable objects
+    var_list = []
     for var in module.vars:
-        log.info('       %s %s %s', var.scope, var.obj_name, var.vb_type)
+        for decl in var.var_decls:
+            myvar = VbVariable(var.scope, decl.obj_name, decl.vb_type_char, decl.vb_type_as,
+                               decl.withevents, decl.subscripts)
+            var_list.append(myvar)
+
+    for var in var_list:
+        log.info('       %s %s', var.scope, var.obj_name)
         direc = Directive(var, 'vbvar', var.obj_name, True)
         direc.rst_out()
 

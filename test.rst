@@ -4,5 +4,6 @@
       .. vba:vbfunc:: name(i%)
          :static:
 
+
          :arg % i:
 

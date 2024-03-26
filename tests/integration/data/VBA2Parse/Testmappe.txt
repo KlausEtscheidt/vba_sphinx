@@ -3,6 +3,8 @@ vb_office_obj: Tabelle1
 ================================================================================
 '! Software in Tabelle
 '%
+Public i%, test As String
+Private x As Double, y%
 '! SelectionChange
 Private Sub Worksheet_SelectionChange(ByVal Target As Range, i%)
 End Sub

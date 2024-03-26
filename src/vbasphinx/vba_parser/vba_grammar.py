@@ -65,9 +65,14 @@ const_statement = pp.Group(const_scope('scope') + pp.Suppress(CONST)\
 var_scope = PRIV | PUBL | GLOB | DIM
 var_subscript = LPAR + pp.SkipTo(')', include=False) + RPAR
 not_method = ~ ( SUB | FUNC | STATIC | PROP)
-var_decl = pp.Group(pp.Opt(WITH)('withevents') + vb_typedname('obj_name') + pp.Opt(type_char)\
-                + pp.Opt(var_subscript)('subscripts') + pp.Opt(type_as) + pp.Opt(COMMA))('var_decl*')
-var_statement = pp.Group(var_scope('scope') + not_method + pp.OneOrMore(var_decl))('vars*')
+# varname might be confused with keywords
+# e.g. 'Public Sub mysub()' mustn't result in a parsed variable named 'Sub'
+# or Public i%,j%\nPrivate k% must not be parsed as one var statement with third var named 'Provate'
+var_name = ~ ( SUB | FUNC | STATIC | PROP | PRIV | PUBL | FRIEND | PROP | GLOB | DIM | CONST) + vb_typedname('obj_name')
+var_decl = pp.Group(pp.Opt(WITH)('withevents') + var_name + pp.Opt(type_char)
+        + pp.Opt(var_subscript)('subscripts') + pp.Opt(type_as)
+        + pp.Opt(COMMA))('var_decls*')
+var_statement = pp.Group(var_scope('scope') + pp.OneOrMore(var_decl))('vars*')
 
 # properties
 # ------------------------------------------------------------------------

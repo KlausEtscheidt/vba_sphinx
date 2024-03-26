@@ -2,13 +2,33 @@ Testmappe
 =========
 
 .. vba:module:: Testmappe
+   :scope: 
+   :withevents:
+   :static:
+
 
    .. vba:vb_office_obj:: Tabelle1
 
-      Software in Tabelle
+      .. vba:vbvar:: i%
+         :scope: Public
+         :withevents:
+
+      .. vba:vbvar:: test As String
+         :scope: Public
+         :withevents:
+
+      .. vba:vbvar:: x As Double
+         :scope: Private
+         :withevents:
+
+      .. vba:vbvar:: y%
+         :scope: Private
+         :withevents:
 
       .. vba:vbsub:: Worksheet_SelectionChange(ByVal Target As Range, i%)
          :scope: Private
+         :withevents:
+         :static:
 
          SelectionChange
 
@@ -18,31 +38,31 @@ Testmappe
 
    .. vba:vbmodule:: main
 
-      Dies ist ein test Modul
-      wir testen den Exel parser und die Sphinx-rst-Syntax
-
       .. vba:vbconst:: mconst% = 10 
          :scope: Global
+         :withevents:
+         :static:
 
          zahl 10
 
       .. vba:vbconst:: mconst2 As Double = 10 * 10 
          :scope: Public
+         :withevents:
+         :static:
 
          zahl 100
 
       .. vba:vbvar:: MeineVar%
          :scope: Public
-
-         Globaler Speicher
+         :withevents:
 
       .. vba:vbvar:: MeinWb As Excel.Workbooks
          :scope: Public
-
-         Test .-namen
+         :withevents:
 
       .. vba:vbsub:: testis(a%, b As Integer)
          :scope: Public
+         :withevents:
          :static:
 
          eine test sub
@@ -52,6 +72,9 @@ Testmappe
 
 
       .. vba:vbfunc:: myf(i As Double) As String
+         :scope: 
+         :withevents:
+         :static:
 
          eine test Function
 
@@ -61,6 +84,9 @@ Testmappe
 
 
       .. vba:vbfunc:: myfunc2&()
+         :scope: 
+         :withevents:
+         :static:
 
          noch ne test Function
 
@@ -70,33 +96,29 @@ Testmappe
 
       .. vba:vbsub:: xx()
          :scope: Public
+         :withevents:
+         :static:
+
 
 
 
    .. vba:vbclass:: TestKlasse
 
-      Testklasse zum Syntax test
-      lalala
-      ---------------------
-
       .. vba:vbvar:: Klassenvariable%
          :scope: Public
-
-         Public var
+         :withevents:
 
       .. vba:vbvar:: Klassenvariable2 As String
          :scope: Public
-
-         noch ne Var
+         :withevents:
 
       .. vba:vbvar:: withvar As Application
          :scope: Public
          :withevents:
 
-         withvar test
-
       .. vba:vbprop:: Wert As Variant
          :scope: Public
+         :withevents:
          :static:
 
          Getter für Wert
@@ -104,11 +126,15 @@ Testmappe
 
       .. vba:vbprop:: ABCssssssssssssssssssss
          :scope: Private
+         :withevents:
+         :static:
 
          eine boese prop
 
       .. vba:vbsub:: klassensub()
          :scope: Public
+         :withevents:
+         :static:
 
          eine sub der Klasse TestKlasse
 
@@ -116,10 +142,10 @@ Testmappe
 
    .. vba:vbform:: UserForm1
 
-      ein test Formular
-
       .. vba:vbsub:: UserForm_Activate()
          :scope: Private
+         :withevents:
+         :static:
 
          Private Sub Beim Öffnen
 
@@ -127,6 +153,8 @@ Testmappe
 
       .. vba:vbsub:: UserForm_Click()
          :scope: Private
+         :withevents:
+         :static:
 
          beim Clicken
 
