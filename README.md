@@ -11,31 +11,40 @@
 
  The VBA domain (name **vba**) can be used to document Visual Basic for Applications software.
 
-**.. vba:module::** filename
-: describes the source of the software e.g. an Excel Workbook
+## Directives
+**.. vba:module::** filename\
+describes the source of the software e.g. an Excel Workbook. This directive sets the module name for object declarations that follow after. The module name is used in the global module index and in cross references. For all objects that belong to this module, the filename is shown in the index as source for these objects.
 
-Term *with Markdown*
-: Definition [with reference](syntax/definition-lists)
+**.. vba:vb_office_obj::** name\
+**.. vba:vbform::** name\
+**.. vba:vbclass::** name\
+**.. vba:vbmodule::** name\
+these directives describe modules inside a vba file, which are classical software modules (vbmodule), class modules (vbclass), user forms (vbform) or office objects (vb_office_obj) e.g. an Excel-Sheet.
+All this modules can contain software.
 
-  A second paragraph
-: A second definition
+**.. vba:vbfunc::** funcname(signature) As vbtype
 
-- module (File)
-- vb_office_obj
-- vbform
-- vbclass
-- vbmodule
-- vbfunc
-- vbsub
-- vbprop
-- vbvar
-- vbconst
+**.. vba:vbsub::** funcname(signature) As vbtype
 
-roles:
-- mod
-- vbmod
-- vbproc
-- vbdata
+**.. vba:vbprop::** propertyname
+
+**.. vba:vbvar::** varname
+
+**.. vba:vbconst::** varname
+
+## Roles
+
+**:vba:mod:** Modul1\
+link to a module
+
+**:vba:vbmod:** Modul1.myVBModul\
+link to a vbmodule like VB form or VB class module
+
+**:vba:vbproc:** Modul1.vbaclass.mysub\
+link to a procedure like Sub or Function
+
+**:vba:vbdata:** Modul1.vbaclass.myprop\
+link to property, variable or constant value
 
 options for module:
 - no-index'
