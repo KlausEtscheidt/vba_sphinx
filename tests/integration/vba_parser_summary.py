@@ -38,6 +38,9 @@ def export_summary(tree, fullpath):
 
 def check_summary():
     '''Neue Zusammenfassung mit Referenz aus Datei vergleichen.'''
+
+    messages = []
+
     with open(JSONFILE, "r", encoding='utf-8') as fp:
         ref = json.load(fp)
 
@@ -67,7 +70,9 @@ def check_summary():
             for count in count_list:
                 if module[count] != ref_mod[count]:
                     msg = msg.format(count, module[count], ref_mod[count])
-                    raise VBAParserCheckExc(msg)
+                    messages.append(msg)
+
+        return messages
 
 def write_summary():
     '''Zusammenfassung als JSON expotieren.'''

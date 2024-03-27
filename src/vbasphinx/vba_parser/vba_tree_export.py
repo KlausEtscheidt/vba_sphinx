@@ -12,6 +12,7 @@ log = logging.getLogger()
 class VbModule:
     module_type: str
     obj_name: str
+    docstrings: list[str]
 
 @dataclass
 class VbVariable:
@@ -21,6 +22,40 @@ class VbVariable:
     vb_type_as: str
     withevents: str
     subscripts: str
+
+@dataclass
+class VbConst:
+    scope: str
+    obj_name: str
+    vb_type_char: str
+    vb_type_as: str
+    value: str
+
+@dataclass
+class VbProperty:
+    scope: str
+    obj_name: str
+    vb_type_char: str
+    vb_type_as: str
+    static: str
+
+@dataclass
+class VbMethodArg:
+    param_name: str
+    vb_type_char: str
+    vb_type_as: str
+    by: str #unused for the moment
+
+@dataclass
+class VbMethod:
+    scope: str
+    obj_name: str
+    vb_type_char: str
+    vb_type_as: str
+    static: str
+    method_params: str
+    param_detail: list[VbMethodArg]
+    docstrings: list[str]
 
 class Directive:
 
@@ -44,15 +79,18 @@ class Directive:
         self.direc_arg = argument
         self.complete= complete
 
-    def  rst_out(self):
-        '''writes directive to rst outfile'''
+    def directive_rst_out(self):
         indent = ' '*3*self.level
+        directive = f'\n{indent}.. vba:{self.direc_name}:: {self.direc_arg}\n'
+        self.outfile.write(directive)
+        
+    def rst_out(self):
+        '''writes directive with options fields and content to rst outfile'''
         # append arguments, type etc to the name, so that we get the complete signature
         if self.complete:
             self.__complete_argument()
         # write the directive
-        directive = f'\n{indent}.. vba:{self.direc_name}:: {self.direc_arg}\n'
-        self.outfile.write(directive)
+        self.directive_rst_out()
         # write options
         self.__options_rst_out()
         # write docstrings as directive content
@@ -86,7 +124,6 @@ class Directive:
         for doc in self.node.docstrings:
             doc = doc.strip()
             self.outfile.write(f'{indent}{doc}\n')
-        # self.outfile.write('\n')
 
     def __options_rst_out(self):
         indent = ' '*3*(self.level+1)
@@ -94,7 +131,7 @@ class Directive:
             self.outfile.write(f'{indent}:scope: {self.node.scope}\n')
         if hasattr(self.node, 'withevents') and self.node.withevents:
             self.outfile.write(f'{indent}:withevents:\n')
-        if hasattr(self.node, 'Static') and self.node.Static:
+        if hasattr(self.node, 'static') and self.node.static:
             self.outfile.write(f'{indent}:static:\n')
 
     def __complete_argument(self):
@@ -111,36 +148,29 @@ class Directive:
         if self.direc_name == 'vbconst':
             self.direc_arg  += ' = ' + self.node.value
 
-def export_module(module):
-    '''writes directive for module and all its entities to rst outfile'''
-    my_module = VbModule(module['module_type'], module['obj_name'])
-    log.info('\n%s : %s', my_module.module_type, my_module.obj_name)
-    Directive.level = 1
-    direc = Directive(my_module, my_module.module_type, my_module.obj_name)
-    direc.rst_out()
-    Directive.level = 2
-
+def export_const(module):
+    '''writes directives for vba-const-values to rst outfile'''
     log.info('       %d Konstanten gefunden:', len(module.const))
     for const in module.const:
-        log.info('      %s %s %s = %s', const.scope, const.obj_name, const.vb_type, const.value)
-        direc = Directive(const, 'vbconst', const.obj_name, True)
+        myconst = VbConst(const.scope, const.obj_name, const.vb_type_char, const.vb_type_as, const.value)
+        log.info('      %s %s %s = %s', myconst.scope, myconst.obj_name, myconst.vb_type_as, myconst.value)
+        direc = Directive(myconst, 'vbconst', myconst.obj_name, True)
         direc.rst_out()
 
+def export_vars(module):
+    '''writes directives for vba-variables to rst outfile'''
     log.info('       %d glob. Variable gefunden:', len(module.vars))
     # Every var statement can contain multiple var declarations with a common scope
-    # So first, we store them as list of VbVariable objects
-    var_list = []
     for var in module.vars:
         for decl in var.var_decls:
             myvar = VbVariable(var.scope, decl.obj_name, decl.vb_type_char, decl.vb_type_as,
                                decl.withevents, decl.subscripts)
-            var_list.append(myvar)
+            log.info('       %s %s', myvar.scope, myvar.obj_name)
+            direc = Directive(myvar, 'vbvar', myvar.obj_name, True)
+            direc.rst_out()
 
-    for var in var_list:
-        log.info('       %s %s', var.scope, var.obj_name)
-        direc = Directive(var, 'vbvar', var.obj_name, True)
-        direc.rst_out()
-
+def export_props(module):
+    '''writes directives for vba-properties to rst outfile'''
     log.info('       %d properties gefunden:', len(module.props))
     # we have multiple statements (Let, Get, Set) for properties,
     # but we want to export only one property node
@@ -175,19 +205,42 @@ def export_module(module):
         prop['docstrings'] = docs
         log.info('      %s %s %s %s (%s) %s ', prop.scope, prop.method_type,
                 prop.prop_type, prop.obj_name, prop.prop_params, prop.vb_type)
-        direc = Directive(prop, 'vbprop', prop.obj_name, True)
+        myprop = VbProperty(prop.scope, prop.obj_name, prop.vb_type_char, prop.vb_type_as,
+                            prop.Static)
+        direc = Directive(myprop, 'vbprop', myprop.obj_name, True)
         direc.rst_out()
 
+def export_method(module):
+    '''writes directives for vba-methods to rst outfile'''
     log.info('       %d Methoden gefunden:', len(module.methods))
     for meth in module.methods:
         log.info('      %s %s %s (%s) %s', meth.scope, meth.method_type,
                 meth.obj_name, meth.method_params, meth.vb_type)
+        arg_list = []
+        for arg in meth.param_detail:
+            myarg = VbMethodArg(arg.param_name, arg.vb_type_char, arg.vb_type_as, arg.by)
+            arg_list.append(myarg)
+        mymethod = VbMethod(meth.scope, meth.obj_name, meth.vb_type_char, meth.vb_type_as,
+                    meth.Static, meth.method_params, arg_list)
+
         if  meth.method_type == 'Sub':
-            direc = Directive(meth, 'vbsub', meth.obj_name, True)
+            direc = Directive(mymethod, 'vbsub', mymethod.obj_name, True)
         else:
-            direc = Directive(meth, 'vbfunc', meth.obj_name, True)
+            direc = Directive(mymethod, 'vbfunc', mymethod.obj_name, True)
         direc.rst_out()
 
+def export_module(module):
+    '''writes directive for vba-module and all its entities to rst outfile'''
+    my_module = VbModule(module['module_type'], module['obj_name'], module['docstrings'])
+    log.info('\n%s : %s', my_module.module_type, my_module.obj_name)
+    Directive.level = 1
+    direc = Directive(my_module, my_module.module_type, my_module.obj_name)
+    direc.rst_out()
+    Directive.level = 2
+    export_const(module)
+    export_vars(module)
+    export_props(module)
+    export_method(module)
 
 def export_rst(topnode, exportdir, fullpath):
     '''exports parsing result tree to rst outfile
@@ -213,7 +266,7 @@ def export_rst(topnode, exportdir, fullpath):
         Directive.outfile = outfile
         Directive.level = 0
         direc = Directive(topnode, 'module', filename)
-        direc.rst_out()
+        direc.directive_rst_out()
         for module in topnode.vbamodules:
             export_module(module)
 

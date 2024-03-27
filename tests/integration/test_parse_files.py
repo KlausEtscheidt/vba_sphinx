@@ -18,9 +18,13 @@ for infile in files2process:
         vbchk.export_summary(tree, infile)
 
 try:
-    vbchk.check_summary()
+    messages = vbchk.check_summary()
     # vbchk.write_summary()
 except vbchk.VBAParserCheckExc as err:
     print(err)
 else:
-    print('='*30,' alle ok ','='*30)
+    if messages:
+        for msg in messages:
+            print(msg)
+    else:
+        print('='*30,' alle ok ','='*30)

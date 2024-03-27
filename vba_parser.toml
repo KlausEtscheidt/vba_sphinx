@@ -28,6 +28,7 @@ files = [
     #'Ersatz_Auftragsverfolgung_Makros.txt',
     #'Ersatz_Auftragsverfolgung.txt',
     #'Ersatz_Etiketten Win10.txt',
-    #'Testmappe.txt',
-    '*.txt',
+    'Testmappe.txt',
+    #'Montage_Makros.txt',
+    #'*.txt',
 ]

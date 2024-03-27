@@ -68,7 +68,8 @@ not_method = ~ ( SUB | FUNC | STATIC | PROP)
 # varname might be confused with keywords
 # e.g. 'Public Sub mysub()' mustn't result in a parsed variable named 'Sub'
 # or Public i%,j%\nPrivate k% must not be parsed as one var statement with third var named 'Provate'
-var_name = ~ ( SUB | FUNC | STATIC | PROP | PRIV | PUBL | FRIEND | PROP | GLOB | DIM | CONST) + vb_typedname('obj_name')
+var_name = ~ ( SUB | FUNC | STATIC | PROP | PRIV | PUBL | FRIEND | PROP | GLOB | DIM | CONST
+              | DIVIDER | EOF) + vb_typedname('obj_name')
 var_decl = pp.Group(pp.Opt(WITH)('withevents') + var_name + pp.Opt(type_char)
         + pp.Opt(var_subscript)('subscripts') + pp.Opt(type_as)
         + pp.Opt(COMMA))('var_decls*')
