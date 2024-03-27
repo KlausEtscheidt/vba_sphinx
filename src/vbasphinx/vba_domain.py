@@ -34,7 +34,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
 class VBAObject(ObjectDescription[tuple[str, str]]):
     """
     Description of a VBA object.
@@ -60,7 +59,6 @@ class VBAObject(ObjectDescription[tuple[str, str]]):
         'single-line-parameter-list': directives.flag,
         'static': directives.flag,
         'scope': directives.unchanged,
-        # 'vba_type': directives.unchanged,
         'withevents': directives.flag,
     }
 

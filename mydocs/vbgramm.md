@@ -20,8 +20,6 @@ Mehrere Zeilen vor oder ein String am Ende der Deklarations-Zeile
 
 ## Einschränkungen des Parsers
 - kein Inhalt der Methoden
-- **bisher keine Analyse der Argumente (todo)**
-- **Dim usw nur für eine Variable (todo)**
 - **Todo: exakter Abgleich mit VB-Syntax **
 
 ## Statements im Einzelnen
@@ -52,6 +50,9 @@ Dim     [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ] [ , [ 
 Public  [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ] [ , [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ]] . . .
 Private [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ] [ , [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ]] . . .
 
+### subscripts
+[ lower To ] upper [ , [ lower To ] upper ] . . ..
+
 ### const
 [ Public | Private ] Const constname [ As type ] = expression
 
@@ -59,9 +60,9 @@ Private [ WithEvents ] varname [ ( [ subscripts ] ) ] [ As [ New ] type ] [ , [ 
 
 ## Umsetzung
 
-**variable** beim Komma in Einzelstatements auftrennen **ToDO**
+**variable** beim Komma in Einzelstatements auftrennen
 
-**scope** statt visibility bei allen Statements (VBA-Objekten)
+**scope** statt bei allen Statements (VBA-Objekten)
 [ Public | Private | Friend | Global | Dim] bei sub, func, prop, var, const
 in rst als **option** wird zu keyword vor dem Namen
 

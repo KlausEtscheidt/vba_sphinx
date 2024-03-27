@@ -1,8 +1,3 @@
-# pyparse
-[pyparse](https://pyparsing-docs.readthedocs.io/en/latest/)
-[Common-Pitfalls](https://github.com/pyparsing/pyparsing/wiki/Common-Pitfalls-When-Writing-Parsers)
-[wiki](https://github.com/pyparsing/pyparsing/wiki)
-
 # VB Syntax
 
 [language-reference](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/visual-basic-language-reference)\
@@ -20,11 +15,3 @@
 
 [Liste aller Keywords](https://learn.microsoft.com/en-us/office/vba/language/reference/keywords-visual-basic-for-applications)\
 [keywords-by-task](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/keywords-by-task)
-
-
-## ToDo
-
-[const-statement](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/const-statement)\
-[const-directive](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/const-directive)\
-[property-get-statement](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/property-get-statement)\
-[enum-statement](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/enum-statement)
