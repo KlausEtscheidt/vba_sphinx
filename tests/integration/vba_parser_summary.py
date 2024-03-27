@@ -63,7 +63,7 @@ def check_summary():
                     write_summary()
                 else:
                     raise VBAParserCheckExc(f'Modul {fname}/{modname} nicht in Referenz.')
-                    
+
             ref_mod = ref_file[modname]
             msg = f'In Modul {fname}/{modname}' + ' {}: {:d} != {:d} (ref).'
             count_list = ['n_const', 'n_vars', 'n_methods']

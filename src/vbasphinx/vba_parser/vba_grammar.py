@@ -3,11 +3,11 @@ import logging
 import pyparsing as pp
 
 # pylint: disable=global-statement, invalid-name
+# pylint: disable=unnecessary-pass, not-callable, too-many-function-args
 log = logging.getLogger()
 
-# pylint: disable=unnecessary-pass
 
-currently_parsed_file = '' # pylint: disable=invalid-name
+currently_parsed_file = ''
 
 # chars valid for types in vb (like dim i% for integer)
 TYPEDEF_CHAR = '%&^@!#$'
@@ -241,7 +241,7 @@ def nop_err(_text, _loc, _expr, _exc, _cache):
 def print_all_err(_text, _loc, expr, exc, _cache):
     '''logs message when expression was not found (for debugging)'''
     log.error('\n\n %s\n', currently_parsed_file)
-    #log.error('Fehler: %s\nin zeile %d gefunden:\n%s', exc.msg, exc.lineno, exc.line)
+    log.error('Fehler: %s\nin zeile %d gefunden:\n%s', exc.msg, exc.lineno, exc.line)
     log.error('nicht gefunden: %s\n', expr.customName)
     # loc_min = max(0, loc-100)
     # loc_max = min(len(text)-1, loc+100)
@@ -271,4 +271,3 @@ vbagramm.set_debug_actions(print_search,print_finished,print_all_err)
 # EOF.set_debug_actions(print_search,print_found,print_all_err)
 # vbparam.set_debug_actions(print_search,print_found,print_all_err)
 # end_param.set_debug_actions(print_search,print_found,print_all_err)
-

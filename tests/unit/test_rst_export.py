@@ -21,6 +21,7 @@ def export_module_test(module, ftype, resultstr):
         resultstr (str): expected content of rst file
     '''
     rstfile = './test.rst'
+    module['docstrings'] = []
     with open(rstfile, 'w'  , encoding="utf-8") as outfile:
         vbexp.Directive.outfile = outfile
         vbexp.export_module(module)
@@ -50,11 +51,12 @@ def get_dummy_module(target_list_name, parse_results):
 
 #######################################################
 # test const exports
-@pytest.fixture(params=[
+@pytest.fixture(name='get_const_data', params=[
     'Private Const name$ = "sd" + "er"',
     'Const name As Integer = 2 * (1 + 23)',
     ])
-def get_const_data(request):
+def get_const_data_fixt(request):
+    '''test data for const statements'''
     data = [
     '$ = "sd" + "er"\n         :scope: Private\n',
     ' As Integer = 2 * (1 + 23)\n',
@@ -62,6 +64,7 @@ def get_const_data(request):
     return request.param, data[request.param_index]
 
 def test_const_statement(get_const_data):
+    '''testing const statements'''
     toparse, resultstring = get_const_data
     p_res = vbgr.const_statement.parse_string(toparse)
     module = get_dummy_module('const', p_res.const)
@@ -69,11 +72,12 @@ def test_const_statement(get_const_data):
 
 #######################################################
 # test var exports
-@pytest.fixture(params=[
+@pytest.fixture(name='get_var_data', params=[
     "Public name As Boolean",
     'Global WithEvents name As Double',
     ])
-def get_var_data(request):
+def get_var_data_fixt(request):
+    '''test data for variable statements'''
     data = [
     ' As Boolean\n         :scope: Public\n',
     ' As Double\n         :scope: Global\n         :withevents:\n',
@@ -81,6 +85,7 @@ def get_var_data(request):
     return request.param, data[request.param_index]
 
 def test_var_statement(get_var_data):
+    '''testing variable statements'''
     toparse, resultstring = get_var_data
     p_res = vbgr.var_statement.parse_string(toparse)
     module = get_dummy_module('vars', p_res.vars)
@@ -89,12 +94,13 @@ def test_var_statement(get_var_data):
 
 #######################################################
 # test property exports
-@pytest.fixture(params=[
+@pytest.fixture(name='get_prop_data', params=[
     'Property Let name(s)',
     'Private Property Get name (xyz() As String = "asd") As Integer',
     'Public Property Set name (i%, b As Int)',
     ])
-def get_prop_data(request):
+def get_prop_data_fixt(request):
+    '''test data for property statements'''
     data = [
     '\n',
     ' As Integer\n         :scope: Private\n',
@@ -103,6 +109,7 @@ def get_prop_data(request):
     return request.param, data[request.param_index]
 
 def test_prop_statement(get_prop_data):
+    '''testing property statements'''
     toparse, resultstring = get_prop_data
     p_res = vbgr.prop_statement.parse_string(toparse)
     module = get_dummy_module('props', p_res.props)
@@ -110,7 +117,7 @@ def test_prop_statement(get_prop_data):
 
 #######################################################
 # test method exports
-@pytest.fixture(params=[
+@pytest.fixture(name='get_method_data', params=[
     'Function name$(i%, x() As String)',
     'Private Sub name()',
     'Private Sub name(y%=23+3)',
@@ -119,7 +126,8 @@ def test_prop_statement(get_prop_data):
     'Function name(i%) As Boolean',
     'Static Function name(i%)',
     ])
-def get_method_data(request):
+def get_method_data_fixt(request):
+    '''test data for sub or function statements'''
     data = [
     ('func', '$(i%, x() As String)\n\n         :arg % i:\n         :arg String x:\n'
                 + '         :returns:\n         :returntype: $\n\n'),
@@ -138,6 +146,7 @@ def get_method_data(request):
     return request.param, ftype, resultstring
 
 def test_method_statement(get_method_data):
+    '''testing sub or function statements'''
     toparse, ftype, resultstring = get_method_data
     p_res = vbgr.method_statement.parse_string(toparse)
     module = get_dummy_module('methods', p_res.methods)

@@ -10,37 +10,45 @@ log = logging.getLogger()
 
 @dataclass
 class VbModule:
+    '''data of VBA Module'''
     module_type: str
     obj_name: str
     docstrings: list[str]
 
 @dataclass
+class VbConst:
+    '''data of VBA Constant value'''
+    scope: str
+    obj_name: str
+    vb_type_char: str
+    vb_type_as: str
+    value: str
+    docstrings: list[str]
+
+@dataclass
 class VbVariable:
+    '''data of VBA variable'''
     scope: str
     obj_name: str
     vb_type_char: str
     vb_type_as: str
     withevents: str
     subscripts: str
-
-@dataclass
-class VbConst:
-    scope: str
-    obj_name: str
-    vb_type_char: str
-    vb_type_as: str
-    value: str
+    docstrings: list[str]
 
 @dataclass
 class VbProperty:
+    '''data of VBA property'''
     scope: str
     obj_name: str
     vb_type_char: str
     vb_type_as: str
     static: str
+    docstrings: list[str]
 
 @dataclass
 class VbMethodArg:
+    '''data of arguments of VBA sub or function'''
     param_name: str
     vb_type_char: str
     vb_type_as: str
@@ -48,6 +56,7 @@ class VbMethodArg:
 
 @dataclass
 class VbMethod:
+    '''data of VBA sub or function'''
     scope: str
     obj_name: str
     vb_type_char: str
@@ -58,46 +67,95 @@ class VbMethod:
     docstrings: list[str]
 
 class Directive:
+    '''Base Sphinx-Directive writer. Writes only the directive statement itself.'''
 
     level = 0
     outfile = None
 
-    def __init__(self, node, name, argument, complete=False):
+    def __init__(self, name, argument):
         '''init
 
         stores some properties
 
         Args:
-            node (ParseResults or VbVariable): object, which should be written as directive
             name (str): name of sphinx directive
             argument (str): argument of sphinx directive
-            complete (bool, optional): if true, argument will be completed
-                with argumentlist of sub/function and type. Defaults to False.
         '''
-        self.node = node
         self.direc_name = name
         self.direc_arg = argument
-        self.complete= complete
 
     def directive_rst_out(self):
+        '''writes directive statement.'''
         indent = ' '*3*self.level
         directive = f'\n{indent}.. vba:{self.direc_name}:: {self.direc_arg}\n'
         self.outfile.write(directive)
-        
-    def rst_out(self):
-        '''writes directive with options fields and content to rst outfile'''
+
+class ObjectDirective(Directive):
+    '''Object Sphinx-Directive writer. 
+
+    Writes directive statement and complete object description: options, fields, content.'''
+
+    def __init__(self, name, node):
+        '''init
+
+        stores some properties
+
+        Args:
+            name (str): name of sphinx directive
+            node (dataclass): object, which should be written as directive
+        '''
+        self.node = node
+        self.direc_name = name
+        self.direc_arg = node.obj_name #argument of sphinx directive
+        super().__init__(self.direc_name, self.direc_arg)
+
+    def obj_rst_out(self):
+        '''writes directive with options, fields and content to rst outfile'''
         # append arguments, type etc to the name, so that we get the complete signature
-        if self.complete:
-            self.__complete_argument()
+        self.__complete_argument()
         # write the directive
         self.directive_rst_out()
         # write options
         self.__options_rst_out()
         # write docstrings as directive content
-        self.__docstring_rst_out()
+        self.docstring_rst_out()
         # write args
         if self.direc_name in ('vbsub', 'vbfunc'):
             self.__arglist_rst_out()
+
+    def docstring_rst_out(self):
+        '''write docstrings'''
+        if not self.node.docstrings:
+            return
+
+        self.outfile.write('\n')
+        indent = ' '*3*(self.level+1)
+        for doc in self.node.docstrings:
+            doc = doc.strip()
+            self.outfile.write(f'{indent}{doc}\n')
+
+    def __complete_argument(self):
+        '''adds argumentlist, type and value to the name if necessary'''
+        if self.node.vb_type_char: # add char for type like in Dim i%
+            self.direc_arg += self.node.vb_type_char
+        # add parameterlist for sub and function
+        if self.direc_name in ('vbsub', 'vbfunc'):
+            self.direc_arg += self.node.method_params
+        # add 'As type' if exists
+        if self.node.vb_type_as:
+            self.direc_arg += ' As ' + self.node.vb_type_as
+        # add value for const
+        if self.direc_name == 'vbconst':
+            self.direc_arg  += ' = ' + self.node.value.strip()
+
+    def __options_rst_out(self):
+        indent = ' '*3*(self.level+1)
+        if hasattr(self.node, 'scope') and self.node.scope:
+            self.outfile.write(f'{indent}:scope: {self.node.scope}\n')
+        if hasattr(self.node, 'withevents') and self.node.withevents:
+            self.outfile.write(f'{indent}:withevents:\n')
+        if hasattr(self.node, 'static') and self.node.static:
+            self.outfile.write(f'{indent}:static:\n')
 
     def __arglist_rst_out(self):
         '''write list of arguments (only for subs and functions)'''
@@ -115,47 +173,17 @@ class Directive:
                 self.outfile.write(f'{indent}:returntype: {vb_type}\n')
         self.outfile.write('\n')
 
-    def __docstring_rst_out(self):
-        if not hasattr(self.node, 'docstrings'):
-            return
-
-        self.outfile.write('\n')
-        indent = ' '*3*(self.level+1)
-        for doc in self.node.docstrings:
-            doc = doc.strip()
-            self.outfile.write(f'{indent}{doc}\n')
-
-    def __options_rst_out(self):
-        indent = ' '*3*(self.level+1)
-        if hasattr(self.node, 'scope') and self.node.scope:
-            self.outfile.write(f'{indent}:scope: {self.node.scope}\n')
-        if hasattr(self.node, 'withevents') and self.node.withevents:
-            self.outfile.write(f'{indent}:withevents:\n')
-        if hasattr(self.node, 'static') and self.node.static:
-            self.outfile.write(f'{indent}:static:\n')
-
-    def __complete_argument(self):
-        '''adds argumentlist, type and value to the name if necessary'''
-        if self.node.vb_type_char: # add char for type like in Dim i%
-            self.direc_arg += self.node.vb_type_char
-        # add parameterlist for sub and function
-        if self.direc_name in ('vbsub', 'vbfunc'):
-            self.direc_arg += self.node.method_params
-        # add 'As type' if exists
-        if self.node.vb_type_as:
-            self.direc_arg += ' As ' + self.node.vb_type_as
-        # add value for const
-        if self.direc_name == 'vbconst':
-            self.direc_arg  += ' = ' + self.node.value
 
 def export_const(module):
     '''writes directives for vba-const-values to rst outfile'''
     log.info('       %d Konstanten gefunden:', len(module.const))
     for const in module.const:
-        myconst = VbConst(const.scope, const.obj_name, const.vb_type_char, const.vb_type_as, const.value)
-        log.info('      %s %s %s = %s', myconst.scope, myconst.obj_name, myconst.vb_type_as, myconst.value)
-        direc = Directive(myconst, 'vbconst', myconst.obj_name, True)
-        direc.rst_out()
+        myconst = VbConst(const.scope, const.obj_name, const.vb_type_char, const.vb_type_as,
+                          const.value, const.docstrings)
+        log.info('      %s %s %s = %s', myconst.scope, myconst.obj_name, myconst.vb_type_as,
+                 myconst.value)
+        direc = ObjectDirective('vbconst', myconst)
+        direc.obj_rst_out()
 
 def export_vars(module):
     '''writes directives for vba-variables to rst outfile'''
@@ -164,10 +192,10 @@ def export_vars(module):
     for var in module.vars:
         for decl in var.var_decls:
             myvar = VbVariable(var.scope, decl.obj_name, decl.vb_type_char, decl.vb_type_as,
-                               decl.withevents, decl.subscripts)
+                               decl.withevents, decl.subscripts, var.docstrings)
             log.info('       %s %s', myvar.scope, myvar.obj_name)
-            direc = Directive(myvar, 'vbvar', myvar.obj_name, True)
-            direc.rst_out()
+            direc = ObjectDirective('vbvar', myvar)
+            direc.obj_rst_out()
 
 def export_props(module):
     '''writes directives for vba-properties to rst outfile'''
@@ -179,7 +207,8 @@ def export_props(module):
     # with sub-dict as dictionary of all statements found for this prop_name
     all_props = {}
     for prop in module.props:
-        if not prop.obj_name in all_props.keys():
+        if not prop.obj_name in all_props.keys(): # pylint: disable=consider-iterating-dictionary
+
             # first statement for property named prop_name
             # we generate dict-entry under key of prop_type
             one_prop = {prop.prop_type: prop}
@@ -206,9 +235,9 @@ def export_props(module):
         log.info('      %s %s %s %s (%s) %s ', prop.scope, prop.method_type,
                 prop.prop_type, prop.obj_name, prop.prop_params, prop.vb_type)
         myprop = VbProperty(prop.scope, prop.obj_name, prop.vb_type_char, prop.vb_type_as,
-                            prop.Static)
-        direc = Directive(myprop, 'vbprop', myprop.obj_name, True)
-        direc.rst_out()
+                            prop.Static, prop.docstrings)
+        direc = ObjectDirective('vbprop', myprop)
+        direc.obj_rst_out()
 
 def export_method(module):
     '''writes directives for vba-methods to rst outfile'''
@@ -221,21 +250,22 @@ def export_method(module):
             myarg = VbMethodArg(arg.param_name, arg.vb_type_char, arg.vb_type_as, arg.by)
             arg_list.append(myarg)
         mymethod = VbMethod(meth.scope, meth.obj_name, meth.vb_type_char, meth.vb_type_as,
-                    meth.Static, meth.method_params, arg_list)
+                    meth.Static, meth.method_params, arg_list, meth.docstrings)
 
         if  meth.method_type == 'Sub':
-            direc = Directive(mymethod, 'vbsub', mymethod.obj_name, True)
+            direc = ObjectDirective('vbsub', mymethod)
         else:
-            direc = Directive(mymethod, 'vbfunc', mymethod.obj_name, True)
-        direc.rst_out()
+            direc = ObjectDirective('vbfunc', mymethod)
+        direc.obj_rst_out()
 
 def export_module(module):
     '''writes directive for vba-module and all its entities to rst outfile'''
     my_module = VbModule(module['module_type'], module['obj_name'], module['docstrings'])
     log.info('\n%s : %s', my_module.module_type, my_module.obj_name)
     Directive.level = 1
-    direc = Directive(my_module, my_module.module_type, my_module.obj_name)
-    direc.rst_out()
+    direc = ObjectDirective(my_module.module_type, my_module)
+    direc.directive_rst_out()
+    direc.docstring_rst_out()
     Directive.level = 2
     export_const(module)
     export_vars(module)
@@ -265,7 +295,7 @@ def export_rst(topnode, exportdir, fullpath):
         outfile.write(line+'\n')
         Directive.outfile = outfile
         Directive.level = 0
-        direc = Directive(topnode, 'module', filename)
+        direc = Directive('module', filename)
         direc.directive_rst_out()
         for module in topnode.vbamodules:
             export_module(module)
