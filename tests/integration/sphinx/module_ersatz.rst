@@ -36,18 +36,29 @@ vba
       :returns: nix
 
 
-   .. vba:vbsub:: vbasub
+   .. vba:vbsub:: vbasub(myvar1 As Double, i%)
       :scope: Private
-      :single-line-parameter-list:
 
-      volle signatur Private Sub(asak jjjjjjjjjjjjjjjjjjjj kkkkkkkkkkkkkkkkkkkkk lllllllllllllllllllllllllllll, öööööööööööööööööööööööööööööö , hhhhhhhhhhhhhhhhhhhhh)
+      Here you can describe the sub, 
+      with as much of text as it doesn't bother your reader.
 
-      :arg ketyp kevar: text zu kevar sssssssssssssssssssssssssssssss dddddd 1234567890b1234567890b1234567890b
-      :arg kevar2: text zu kevar2
-      :type kevar2: int
-      :arg % i: ein int
-      :returns: was geben wir zurück
-      :returntype: Typ von was geben wir zurück 
+      :arg Double myvar1: description of myvar1
+      :arg % i: description of integer variable i
+      :returns: description of what is returned
+      :rtype: type of what is returned
+
+
+   .. vba:vbsub:: vbasub2(myvar1 As Double, myvar2 As specialtype, i%)
+      :scope: Private
+
+      Here you can describe the sub, with as much of text as it doesn't bother your reader.
+
+      :arg Double myvar1: description of myvar1
+      :arg myvar2: description of myvar2
+      :type myvar2: specialtype
+      :arg % i: description of integer variable i
+      :returns: description of what is returned
+      :rtype: type of what is returned
 
 .. vba:vbform:: mainform
 
@@ -78,7 +89,9 @@ Python Referenz
    .. py:function:: a_py_function(ddd,  eeeeeeeeeeeeee)
 
       :param SomeClass foo2: description of parameter foo2
-      :param int foo3: parameter foo2
+      :param int foo3: parameter foo3
+      :param foo4: parameter foo4
+      :type foo4: atype
 
       :single-line-parameter-list:
 
