@@ -7,6 +7,7 @@
 # use single backslashes for windows pathes
 # pathes starting with a dot like '.\VBA2Parse' are relativ to the dir current working dir
 
+# Target directory
 outdir = '.\tests\integration\data\VBA2Parse'
 
 # list of office files, whose vba-software should be exported
@@ -19,6 +20,7 @@ outdir = '.\tests\integration\data\VBA2Parse'
 # which defines a list of files inside >>path<<
 # * as wildcard is allowed
 
+# first list of files to be processed
 [[filelist]]
 path = 'V:\Tools\Excel Makros'
 files = [
@@ -26,8 +28,9 @@ files = [
     'Excel_file.xlsm',
 ]
 
+# second list of files to be processed
 [[filelist]]
 path = '..'
 files = [
-    'myDB.accdb',
+    'myworkbook.xlsm',
 ]
