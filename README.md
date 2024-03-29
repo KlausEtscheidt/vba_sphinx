@@ -24,12 +24,11 @@ All three tools are written in python, but can be used without python knowledge.
 The codereader can be used to export the VBA source code out of office files into plain text files.
 For the moment the tool can handle Excel- and Access-files.
 After installation of the package you should generate a directory of your choice as working directory.
-
 Inside this working directory we need a configuration file named *vba_codereader.toml* to use the tool.
+The file is written in the toml format. If you are interested in the toml details: see [toml.io](https://toml.io/en/).
+
 This file defines the output directory, where the exported files will be stored and the office files
 which will be searched for software. You can download an example file from [vba_codereader.zip](https://github.com/KlausEtscheidt/vba_sphinx/files/14805141/vba_codereader.zip).
-
-If you are interested in the toml details: see [toml.io](https://toml.io/en/).
 
 For our purpose, we first define the output directory for the exported VBA files with:
 ```code
@@ -37,15 +36,16 @@ outdir = '.\mydir_of_choice'
 ```
 The generated files will be named like the office file where the software was found
 but with '*.txt' extension. The directory must exist.  
-```{important}Use single backslashes for windows pathes.  
-Pathes starting with a dot like '.\mydir' are relativ to the current working dir.
-```
+> [!IMPORTANT]
+> Use single backslashes for windows pathes.  
+> Pathes starting with a dot like '.\mydir' are relativ to the current working dir.
+
 Next we define a bunch of office files, which shall be searched for VBA software to export.
 
-```{important}
-You can not export VBA from Excel and Access in one run of the tool.
-So don't mix them in the configuration file.
-```
+> [!IMPORTANT]
+> You can not export VBA from Excel and Access in one run of the tool.
+> So don't mix them in the configuration file.
+
 Example of files to be searched:
 ```code
 [[filelist]]
