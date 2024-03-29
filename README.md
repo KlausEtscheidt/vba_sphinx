@@ -21,16 +21,20 @@ So we have three steps to generate a documentation for VBA and this package cons
 All three tools are written in python, but can be used without python knowledge.
 
 # The VBA Codereader ################################################
+
 The codereader can be used to export the VBA source code out of office files into plain text files.
 For the moment the tool can handle Excel- and Access-files.
-After installation of the package you should generate a directory of your choice as working directory.
+
+After installation of the package, you should generate a directory of your choice as working directory.
+
+## configuration file
 Inside this working directory we need a configuration file named *vba_codereader.toml* to use the tool.
 The file is written in the toml format. If you are interested in the toml details: see [toml.io](https://toml.io/en/).
 
 This file defines the output directory, where the exported files will be stored and the office files
-which will be searched for software. You can download an example file from [vba_codereader.zip](https://github.com/KlausEtscheidt/vba_sphinx/files/14805141/vba_codereader.zip).
+which will be searched for software.
 
-You can download an example file from [vba_codereader.toml](download/vba_codereader.toml).
+You can download an example file from [vba_codereader.toml](data/vba_codereader.toml).
 
 For our purpose, we first define the output directory for the exported VBA files with:
 ```code
@@ -67,6 +71,7 @@ With # you can mark a line as comment, so that the entry is inactivated.
 
 In the example above, we define that we will search for VBA software in every *.xl* file in the directory 'V:\Tools\Excel Makros'.
 
+## run the tool
 To start the export process, open a windows command shell, go to your working directory (the one with the configuration file) and type the command:
 ```code
 python -m vbasphinx.vba_reader Excel
@@ -78,6 +83,47 @@ python -m vbasphinx.vba_reader Access
 for Access.
 
 # The VBA Parser ####################################################
+
+The parser is designed to generate reST files, which can be processed by Sphinx.
+
+## configuration
+Like with the Codereader, you should generate a working directory with a configuration file
+`vba_parser.toml`. An example file [vba_parser.toml](data/vba_parser.toml) can be downloaded from github.
+
+> [!TIP]
+> You can use the same directory for both tools.
+
+The `outdir` and `[[filelist]]` entries work like shown above (see [Codereader configuration](#configuration-file)).
+With `outdir` we define the targetdir for the generated reST files and with `[[filelist]]` we list all the text files with
+VBA source code, which shall be parsed and converted to reST format.
+
+## structure of exported files
+The vba-sources are exported in one text file per office file with the same name 
+but '.txt' extension. 
+Because vba-software is organized in components (like forms, modules, classmodules, etc)
+this structure can be found in the output through headers for each component, like so:
+
+>============================================================
+>vbform: mainform
+>============================================================
+
+with "vbform: mainform" as "type: name" of the component.
+
+blank lines are stripped (not exported) and continuation lines (_ at the end) are joined.
+
+The strucure is designed to be read by a parser, which can write reST-Files for Sphinx.
+
+The code reader writes one text file for each office file, which was searched for VBA software.
+
+This exported file contains all the software of the source file, which normally is spread across
+different
+
+## run the tool
+To start the export process, open a windows command shell, go to your working directory (the one with the configuration file) and type the command:
+```code
+python -m vbasphinx.vba_reader Excel
+```
+
 
 # The VBA Domain ####################################################
 

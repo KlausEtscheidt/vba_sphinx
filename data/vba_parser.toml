@@ -1,0 +1,27 @@
+# toml-configuration file for vba_parser
+# for details of toml-syntax see https://toml.io/en/
+
+# output directory for exported *.rst-files
+# the files will be named like the Excel-File but with '*.txt' extension
+# the directory must exist
+# use single backslashes for windows pathes
+# pathes starting with a dot like '.\VBA2Parse' are relativ to the dir current working dir
+
+# output directory
+outdir = '.\tests\integration\data\parsed'
+
+# list of txt-files with vba-code, which should be parsed
+# 
+# [[filelist]] defines an toml-"array of tables"
+# You can have multiple [[filelist]]-statements in your xl_codereader.toml
+# Each one has to be followed by one >>path = "path\to\my\directory\with\excelfiles"<< statement
+# this has to follow the same rules as >>outdir<< above
+# After the path-statement there must be one >>files = [list, of, files]<< statement,
+# which defines a list of files inside >>path<<
+# * as wildcard is allowed
+
+[[filelist]]
+path = '.\tests\integration\data\VBA2Parse'
+files = [
+    'exported_vba.txt',
+]
