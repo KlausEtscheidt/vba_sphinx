@@ -82,9 +82,44 @@ python -m vbasphinx.vba_reader Access
 ```
 for Access.
 
+## structure of exported files
+The vba-sources are exported in one text file per office file with the same name 
+but '.txt' extension. This name is used by Sphinx in the final documentation.
+An example for an output file can be found in [exported_vba.txt](data/exported_vba.txt).
+
+Because vba-software in office applications is organized in components (like forms, modules, classmodules, etc)
+this structure can be found in the output file too. 
+Each component or module starts with a header:
+
+```code
+============================================================
+vbform: mainform
+============================================================
+```
+
+The pattern "vbform: mainform" is embedded between two lines which consists only 
+of equal signs (minimum 40). `vbform` is the type, and `mainform` the name of the component.
+The following types can be used and are recognized by the VBA Sphinx domain:
+- vbform: for forms
+- vbclass: for class modules
+- vbmodule: for non class modules
+- vb_office_obj: for software, which is embedded in office objects (e.g Excel Worksheets, Workbooks)
+
+The header is followed by the software of this component and thereafter the next component/module
+or an `<EndofFile>` tag at the last line of the file.
+
+> [!IMPORTANT]
+> VBA continuation lines (`'_'` at the end) are are joined by the Codereader,
+> because they are not allowed for the VBA Parser.
+
+This strucure is designed to be read by a parser, which can write reST-Files for Sphinx.
+---
+
 # The VBA Parser ####################################################
 
 The parser is designed to generate reST files, which can be processed by Sphinx.
+It uses input files according to the format defined above (see [structure](#structure-of-exported-files)).
+These file can be generated with the Codereader tool or manually.
 
 ## configuration
 Like with the Codereader, you should generate a working directory with a configuration file
@@ -97,32 +132,68 @@ The `outdir` and `[[filelist]]` entries work like shown above (see [Codereader c
 With `outdir` we define the targetdir for the generated reST files and with `[[filelist]]` we list all the text files with
 VBA source code, which shall be parsed and converted to reST format.
 
-## structure of exported files
-The vba-sources are exported in one text file per office file with the same name 
-but '.txt' extension. 
-Because vba-software is organized in components (like forms, modules, classmodules, etc)
-this structure can be found in the output through headers for each component, like so:
-
->============================================================
->vbform: mainform
->============================================================
-
-with "vbform: mainform" as "type: name" of the component.
-
-blank lines are stripped (not exported) and continuation lines (_ at the end) are joined.
-
-The strucure is designed to be read by a parser, which can write reST-Files for Sphinx.
-
-The code reader writes one text file for each office file, which was searched for VBA software.
-
-This exported file contains all the software of the source file, which normally is spread across
-different
-
 ## run the tool
 To start the export process, open a windows command shell, go to your working directory (the one with the configuration file) and type the command:
 ```code
-python -m vbasphinx.vba_reader Excel
+python -m vbasphinx.vba_parser.vba_parser
 ```
+
+# document VBA sources #########################################################
+ You can add a special form of comments to your source code,
+ which will be included in the reST files and therefore in the sphinx documentation.
+Just append an exclamation mark to the hyphen for VBA comments.
+
+```vba
+' this is a normal vba comment
+'! this is a docstring, which will be included in the documentation
+```
+You can document the following entities this way:
+
+## modules/components
+In order to document a VBA form or class module etc, write the docstrings immediately at the begin of the component.
+Because the docblocks for all the other entities are written above the entity (see below),
+you have to end the docblock for modules (and only these) with a special `'%` comment.
+
+## procedures
+The docstrings for Subroutines and Functions have to be written directly above the procedure.
+
+## properties
+The docstrings for properties have to be written directly above the Get-, Let- or Set-procedure
+for this property. Preferably use the Let-procedure (if exists), because in this case the type of the property can be read.
+
+## constants, variables
+The docstrings for constants and variables can be place directly above 
+or to the right of their declaration.
+
+## arguments of procedures
+They are documented within the docblock of the procedure with a special format:
+```
+'! :arg myarg: description of an argument,
+'!               which can be spread over multiple lines
+'!     :arg arg2: description of second argument
+```
+Enclosed in two `:` the keyword `arg` ist followed by the type name of the argument.
+The second `:` is followed by the description of the argument,
+which can take multiple lines.
+
+Spaces between `'!` and `:arg` are ignored.\
+Spaces between `'!` and the descriptive text in a following line are reduced to one.
+
+## return values of functions
+Similiar to the arguments, there is a special format to document the return value of a function:
+```
+'! :returns: description of what is returned,
+'!               which can be spread over multiple lines.
+```
+Spaces are handled as with arguments.
+
+> [!IMPORTANT]
+> Docstrings for arguments and/or return values must be at the end of the docblock.
+> "normal" docstrings after the last `:arg` or `:returns` will be interpreted as following
+lines of their description.
+
+> [!IMPORTANT]
+> There must not be more than one block of docstrings per each entity.
 
 
 # The VBA Domain ####################################################
@@ -259,3 +330,13 @@ link to a procedure like Sub or Function
 link to property, variable or constant value
 
 
+## run the tool
+If you are not familiar with Sphinx, please refer to Sphinx [quickstart](https://www.sphinx-doc.org/en/master/usage/quickstart.html#), to do the first steps.
+
+All you have to do, to use the VBA Domain, is to edit the conf.py file
+in your sphinx working directory and add `'vbasphinx.vba_domain'` to the `extensions` list.
+
+```code
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon',
+              'sphinx_rtd_theme', 'myst_parser', 'vbasphinx.vba_domain']
+```
