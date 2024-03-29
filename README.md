@@ -1,13 +1,83 @@
 # vba_sphinx
- Python tools to document Visual Basic Software with Sphinx.
+ Python tools to document Visual Basic for Applications (VBA) software with [Sphinx](https://www.sphinx-doc.org/en/master/index.html).
 
- The package consists of three tools, which can be used independant from each other.
+For those who don't know Sphinx: It's a tool which generates various nice outputs like html or pdf
+from simple text files, written in *reStructuredText* ([reST](https://docutils.sourceforge.io/rst.html)) format.
 
- - VBA Codereader can read the VBA source code from an Office Application.
- - VBA Parser can parse VBA source code and convert it into rest format
- - VBA Domain is a Sphinx extension, which enables Sphinx to read Rest files with VBA documentation
+You can write these text files manualy, but there are tools for some programming languages like pyhton,
+which can extract informations from the source code and transform them into reST.
 
- # The VBA Domain ####################################################
+This process can be improved, if the source code contains so called [Docstrings](https://en.wikipedia.org/wiki/Docstring)
+or [Docblocks](https://en.wikipedia.org/wiki/Docblock), which give additional information for specific elements of the sources.
+
+Due to the nature of VBA, which is integrated in applications like Excel, the source code can't be accessed from outside of these applications without more ado.
+
+So we have three steps to generate a documentation for VBA and this package consists of three tools, which can be used independant from each other:
+
+ - VBA Codereader: exports the VBA source code from an Office Application into an external file.
+ - VBA Parser: can parse VBA source code and convert it into reST formated files.
+ - VBA Domain: is a Sphinx extension, which enables Sphinx to process reST files with VBA documentation
+
+All three tools are written in python, but can be used without python knowledge.
+
+# The VBA Codereader ################################################
+The codereader can be used to export the VBA source code out of office into plain text files.
+For the moment the tool can handle Excel- and Access-files.
+After installation of the package you should generate a directory of your choice as working directory.
+
+Inside this working directory we need a configuration file named *vba_codereader.toml* to use the tool.
+This file defines the output directory, where the exported files will be stored and the office files
+which will be searched for software.
+
+If you are interested in the toml details [see toml.io](https://toml.io/en/).
+
+For our purpose we first define the output directory for the exported VBA files with:
+```code
+outdir = '.\mydir_of_choice'
+```
+The generated files will be named like the office file where the software was found
+but with '*.txt' extension. The directory must exist.  
+```{important}Use single backslashes for windows pathes.  
+Pathes starting with a dot like '.\mydir' are relativ to the current working dir.
+```
+Next we define a bunch of office files, which shall be searched for VBA software to export.
+
+```{important}
+You can not export VBA from Excel and Access in one run of the tool.
+So don't mix them in the configuration file.
+```
+Example of files to be searched:
+```code
+[[filelist]]
+path = 'V:\Tools\Excel Makros'
+files = [
+    #'MyExcelWorkbook.xlsm',
+    '*.xl*',
+]
+```
+The block shown above can be used multiple times in a configuration file.
+
+`[[filelist]]` has to be followed by one `path = " "` and one `files = []` statement.  
+The path statement defines a directory and has to follow the same rules as `outdir` above.\
+The files-statement defines a comma separated list of files inside the directory defined by the path-statement.\
+An asterix * as wildcard is allowed.
+With # you can mark a line as comment, so that the entry is inactivated.
+
+In the example above, we define that we will search for VBA software in every *.xl* file in the directory 'V:\Tools\Excel Makros'.
+
+To start the export process, open a windows command shell, go to your working directory (the one with the configuration file) and type the command:
+```code
+python -m vbasphinx.vba_reader Excel
+```
+if you have Excel files in your configuration or 
+```code
+python -m vbasphinx.vba_reader Access
+```
+for Access.
+
+# The VBA Parser ################################################
+
+# The VBA Domain ####################################################
 
  The VBA domain (name **vba**) can be used to document Visual Basic for Applications software.
 
@@ -115,13 +185,24 @@ example:
 ```
 leeds to:
 > *Public Const* mconst2 As Double = 10 * 10
+---
+## Procedure index
+In addition to the general index the role
+```code
+:ref:`vba-procedureindex`
+```
+generates an index, which lists all vba subroutines and functions
+in alphabetical order. The name of the procedure is followed by its type (Sub or Function)
+and the file and vbmodule where the procedure is located.
+
+---
 ## Roles
 
 **:vba:mod:** Modul1\
 link to a module
 
 **:vba:vbmod:** Modul1.myVBModul\
-link to a vbmodule like VB form or VB class module
+link to a vbmodule like a VB-form or a VB-classmodule
 
 **:vba:vbproc:** Modul1.vbaclass.mysub\
 link to a procedure like Sub or Function
