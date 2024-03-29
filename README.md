@@ -21,7 +21,7 @@ So we have three steps to generate a documentation for VBA and this package cons
 All three tools are written in python, but can be used without python knowledge.
 
 # The VBA Codereader ################################################
-The codereader can be used to export the VBA source code out of office into plain text files.
+The codereader can be used to export the VBA source code out of office files into plain text files.
 For the moment the tool can handle Excel- and Access-files.
 After installation of the package you should generate a directory of your choice as working directory.
 
@@ -29,9 +29,9 @@ Inside this working directory we need a configuration file named *vba_codereader
 This file defines the output directory, where the exported files will be stored and the office files
 which will be searched for software.
 
-If you are interested in the toml details [see toml.io](https://toml.io/en/).
+If you are interested in the toml details: see [toml.io](https://toml.io/en/).
 
-For our purpose we first define the output directory for the exported VBA files with:
+For our purpose, we first define the output directory for the exported VBA files with:
 ```code
 outdir = '.\mydir_of_choice'
 ```
@@ -57,7 +57,7 @@ files = [
 ```
 The block shown above can be used multiple times in a configuration file.
 
-`[[filelist]]` has to be followed by one `path = " "` and one `files = []` statement.  
+`[[filelist]]` has to be followed by one `path = ' '` and one `files = []` statement.  
 The path statement defines a directory and has to follow the same rules as `outdir` above.\
 The files-statement defines a comma separated list of files inside the directory defined by the path-statement.\
 An asterix * as wildcard is allowed.
