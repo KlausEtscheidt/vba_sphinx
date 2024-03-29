@@ -30,7 +30,7 @@ The file is written in the toml format. If you are interested in the toml detail
 This file defines the output directory, where the exported files will be stored and the office files
 which will be searched for software. You can download an example file from [vba_codereader.zip](https://github.com/KlausEtscheidt/vba_sphinx/files/14805141/vba_codereader.zip).
 
-You can download an example file from [vba_codereader.toml](https://github.com/KlausEtscheidt/vba_sphinx/downloads/vba_codereader.toml).
+You can download an example file from [vba_codereader.toml](download/vba_codereader.toml).
 
 For our purpose, we first define the output directory for the exported VBA files with:
 ```code
