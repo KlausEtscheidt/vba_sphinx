@@ -172,7 +172,7 @@ They are documented within the docblock of the procedure with a special format:
 '!               which can be spread over multiple lines
 '!     :arg arg2: description of second argument
 ```
-Enclosed in two `:` the keyword `arg` ist followed by the type name of the argument.
+Enclosed in two `:` the keyword `arg` ist followed by the name of the argument.
 The second `:` is followed by the description of the argument,
 which can take multiple lines.
 
