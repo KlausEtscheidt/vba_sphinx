@@ -27,7 +27,7 @@ After installation of the package you should generate a directory of your choice
 
 Inside this working directory we need a configuration file named *vba_codereader.toml* to use the tool.
 This file defines the output directory, where the exported files will be stored and the office files
-which will be searched for software.
+which will be searched for software. You can download an example file from [vba_codereader.zip](https://github.com/KlausEtscheidt/vba_sphinx/files/14805141/vba_codereader.zip).
 
 If you are interested in the toml details: see [toml.io](https://toml.io/en/).
 
