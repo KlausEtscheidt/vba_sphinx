@@ -9,7 +9,7 @@ from  build_sphinx_doku import buildit
 from  vbasphinx.vba_reader import AccessReader, ExcelReader
 from  vbasphinx.vba_parser import vba_parser
 
-# AccessReader.run()
+AccessReader.run()
 # ExcelReader.run()
 
 # vba_parser.run()
