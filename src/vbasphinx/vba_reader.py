@@ -1,8 +1,8 @@
 '''This module reads Excel-Files and exports all the visual-basic routines inside.
 
-    The vba-sources are exported in one Text-File per Excel-File 
+    The vba-sources are exported in one text file per office file 
     with the same name but *.txt extension.
-    Directory for output and files for input have to be defined in file named xl_codereader.toml
+    Directory for output and files for input have to be defined in file named vba_codereader.toml
     in the current working directory.
 
     Because vba-software is organized in components (like forms, modules, classmodules, etc)
@@ -16,7 +16,7 @@
 
     blank lines are stripped (not exported) and continuation lines (_ at the end) are joined.
 
-    The strucure is designed to be read by a parser, which can write RST-Files for Sphinx.
+    The strucure is designed to be read by a parser, which can write reST-Files for Sphinx.
 
     Python-Packages required:
 
@@ -28,7 +28,7 @@
 
 import os
 import logging
-# import sys
+import sys
 from abc import ABCMeta, abstractmethod
 
 import win32com.client as win32
@@ -285,4 +285,11 @@ class ExcelReader(VBAReader):
                 raise VBReaderException(f'{mcs.appname} could not open {name_ext}') from err2
 
 if __name__ == '__main__':
-    pass
+    app = sys.argv[1]
+    if app == "Excel":
+        ExcelReader.run()
+    elif app == "Access":
+        AccessReader.run()
+    else:
+        print ('\nusage:\n\npython -m vbasphinx.vba_reader Excel\n')
+        print ('or:\n\npython -m vbasphinx.vba_reader Access')

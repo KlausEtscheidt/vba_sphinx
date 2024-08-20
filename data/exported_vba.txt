@@ -1,0 +1,92 @@
+================================================================================
+vb_office_obj: Tabelle1
+================================================================================
+'! Software in Tabelle
+'%
+Public i%, test As String
+Private x As Double, y%
+'! SelectionChange
+Private Sub Worksheet_SelectionChange(ByVal Target As Range, i%)
+End Sub
+
+
+================================================================================
+vbmodule: main
+================================================================================
+'! Dies ist ein test Modul
+'! wir testen den Exel parser und die Sphinx-rst-Syntax
+Option Explicit
+Global Const mconst% = 10 '! zahl 10
+Public Const mconst2 As Double = 10 * 10 '! zahl 100
+Public MeineVar% '!Globaler Speicher
+ '! Test .-namen
+Public MeinWb As Excel.Workbooks
+'! eine test sub
+Public Static Sub testis(a%, b As Integer)
+    Dim wbs As Workbooks
+    Dim wb As Workbook
+    Dim mycls As New TestKlasse
+    mycls.klassensub
+    Set wbs = Excel.Workbooks
+    For Each wb In wbs
+        Debug.Print wb.FullName
+    Next
+    MeineVar = 10
+    Debug.Print MeineVar, mconst, myf
+End Sub
+'! eine test Function
+Function myf(i As Double) As String
+  myf = "sss"
+End Function
+'!noch ne test Function
+Function myfunc2&()
+  myfunc2 = "sss"
+End Function
+Public Sub xx()
+    Debug.Print "hallo"
+    testis 10, 20
+End Sub
+
+
+================================================================================
+vbclass: TestKlasse
+================================================================================
+'! Testklasse zum Syntax test
+'! lalala
+'! ---------------------
+'%
+'! Public var
+Public Klassenvariable%
+Public Klassenvariable2 As String '! noch ne Var
+Public WithEvents withvar As Application '! withvar test
+'! Getter für Wert
+Public Static Property Get Wert() As Variant
+End Property
+'! Letter für Wert
+Public Static Property Let Wert(ByVal vNewValue As Variant)
+End Property
+'! eine boese prop
+Private Property Get ABCssssssssssssssssssss()
+End Property
+Private Property Let ABCssssssssssssssssssss(ByVal vNewValue As Variant)
+End Property
+'! eine sub der Klasse TestKlasse
+Public Sub klassensub()
+    Debug.Print ("klassensub")
+End Sub
+
+
+================================================================================
+vbform: UserForm1
+================================================================================
+'! ein test Formular
+'%
+'!Private Sub Beim Öffnen
+Private Sub UserForm_Activate()
+End Sub
+'! beim Clicken
+Private Sub UserForm_Click()
+End Sub
+
+
+<EndofFile>
